@@ -2638,6 +2638,14 @@ body.modal-open #nav { display:none !important; }
         <div class="profile-avatar" style="background:#A259FF">A</div>
         <div class="profile-name">Allison</div>
       </div>
+      <div class="profile-card" onclick="selectProfile('amelie')" style="border-color:#3a0a1e">
+        <div class="profile-avatar" style="background:#FF4081">A</div>
+        <div class="profile-name">Am&#xE9;lie</div>
+      </div>
+      <div class="profile-card" onclick="selectProfile('chloe')" style="border-color:#0a1e3a">
+        <div class="profile-avatar" style="background:#2979FF">C</div>
+        <div class="profile-name">Chlo&#xE9;</div>
+      </div>
     </div>
   </div>
 
@@ -4504,6 +4512,9 @@ function toggle(el, group) {
   el.closest('.card').classList.toggle('done-card');
   state[group].done += wasDone ? -1 : 1;
   updateProgress(group);
+  try { checksSave(); } catch(e) {}
+  try { focusSetsWriteAll(el.closest('.card'), !wasDone); } catch(e) {}
+  try { if (typeof updateNavBadge === 'function') updateNavBadge(group); } catch(e) {}
 
   // Auto-valider le calendrier si séance 100% complète
   if (!wasDone) {
@@ -4549,6 +4560,59 @@ let focusCards  = [];
 let focusIdx    = 0;
 let focusGroup  = '';
 
+/* ── Séries faites en mode focus (persistantes, reset le lendemain, par profil) ── */
+var FOCUS_SETS_KEY = 'focus-sets-v1';
+
+function focusCardKey(card) {
+  var n = card.querySelector('.ex-name');
+  return (card.dataset.group || '') + '||' + (n ? n.textContent.trim() : '');
+}
+function focusSetsCount(card) {
+  var c = 1;
+  card.querySelectorAll('.metric').forEach(function(m) {
+    if (m.querySelector('.metric-label').textContent.toLowerCase().indexOf('rie') !== -1) {
+      c = parseInt(m.querySelector('.metric-val').textContent) || 1;
+    }
+  });
+  return c;
+}
+function focusSetsLoadAll() {
+  try {
+    var raw = localStorage.getItem(pKey(FOCUS_SETS_KEY));
+    if (!raw) return {};
+    var d = JSON.parse(raw);
+    if (d.date !== localDateKey(new Date())) return {};
+    return d.sets || {};
+  } catch(e) { return {}; }
+}
+function focusSetsSaveAll(all) {
+  try { localStorage.setItem(pKey(FOCUS_SETS_KEY), JSON.stringify({ date: localDateKey(new Date()), sets: all })); } catch(e) {}
+}
+/* Quand on coche/décoche l'exercice entier sur la carte : toutes les séries suivent */
+function focusSetsWriteAll(card, done) {
+  if (!card) return;
+  var all = focusSetsLoadAll();
+  var n = focusSetsCount(card), arr = [];
+  for (var i = 0; i < n; i++) arr.push(!!done);
+  all[focusCardKey(card)] = arr;
+  focusSetsSaveAll(all);
+}
+/* Met la case de l'exercice (programme du jour) à fait / pas fait, sans lancer le timer */
+function focusSetCardDone(card, done) {
+  var cb = card.querySelector('.cb');
+  if (!cb || cb.classList.contains('done') === done) return;
+  var group = card.dataset.group;
+  cb.classList.toggle('done', done);
+  card.classList.toggle('done-card', done);
+  if (state[group]) {
+    state[group].done += done ? 1 : -1;
+    updateProgress(group);
+    try { if (typeof updateNavBadge === 'function') updateNavBadge(group); } catch(e) {}
+    if (done && state[group].done > 0 && state[group].done === state[group].total) autoValidateCalendar(group);
+  }
+  try { checksSave(); } catch(e) {}
+}
+
 function openFocus(card) {
   focusGroup = card.dataset.group;
   focusCards = [...document.querySelectorAll(`[data-group="${focusGroup}"]`)];
@@ -4559,11 +4623,14 @@ function openFocus(card) {
 }
 
 function closeFocus() {
+  focusAutoSaveLoads(false);
   focusOverlay.classList.remove('show');
   document.getElementById('scroll-area').style.overflow = '';
+  try { if (typeof renderHome === 'function') renderHome(); } catch(e) {}
 }
 
 function focusMove(dir) {
+  focusAutoSaveLoads(false);
   focusIdx = Math.max(0, Math.min(focusCards.length - 1, focusIdx + dir));
   renderFocus();
 }
@@ -4613,8 +4680,12 @@ function renderFocus() {
   }
   const hasWeight = !!wDiv;
 
+  const savedSets = focusSetsLoadAll()[focusCardKey(card)];
+  const cardIsDone = !!(card.querySelector('.cb') && card.querySelector('.cb').classList.contains('done'));
+
   let setsHTML = '';
   for (let i = 1; i <= setsCount; i++) {
+    const setIsDone = savedSets ? !!savedSets[i-1] : cardIsDone;
     const lw = wtData && wtData.weights && wtData.weights[i-1] != null ? wtData.weights[i-1] : 0;
     const lr = wtData && wtData.reps    && wtData.reps[i-1]    != null ? wtData.reps[i-1]    : '';
     const repSugF = getRepSuggestion();
@@ -4632,18 +4703,18 @@ function renderFocus() {
       </div>` : '';
 
     setsHTML += `
-      <div class="set-row" id="focus-set-${i}">
+      <div class="set-row${setIsDone ? ' set-done' : ''}" id="focus-set-${i}">
         <div class="set-num">${i}</div>
         <div class="set-info">
           <div class="set-name">Série ${i}</div>
           <div class="set-reps">${reps ? reps + ' reps' : ''}</div>
         </div>
         ${weightBlock}
-        <div class="set-cb" onclick="focusToggleSet(this,${i},${rest},'${exName.replace(/['"]/g,"_")}')"></div>
+        <div class="set-cb${setIsDone ? ' done' : ''}" onclick="focusToggleSet(this,${i},${rest},'${exName.replace(/['"]/g,"_")}')"></div>
       </div>`;
   }
 
-  const saveBlock = hasWeight && skey ? `
+  const saveBlock = false && hasWeight && skey ? `
     <button onclick="focusSaveWeights('${skey}',${setsCount})"
       style="font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:2px;
              padding:9px 20px;border-radius:8px;border:none;cursor:pointer;width:100%;
@@ -4667,9 +4738,16 @@ function renderFocus() {
         \u23F1 LANCER RECUP (${rest}s)
       </button>
     </div>`;
+  focusBindAutoSave();
 }
 
-function focusSaveWeights(skey, setsCount) {
+function focusBindAutoSave() {
+  document.querySelectorAll('#focus-sets-tracker .weight-input, #focus-sets-tracker .rep-input').forEach(function(inp) {
+    inp.addEventListener('change', function() { focusAutoSaveLoads(false, true); });
+  });
+}
+
+function focusSaveWeights(skey, setsCount, silent, doRecord) {
   const tracker = document.getElementById('focus-sets-tracker');
   if (!tracker) return;
   const inputs   = tracker.querySelectorAll('.weight-input');
@@ -4691,7 +4769,7 @@ function focusSaveWeights(skey, setsCount) {
   histData.history.unshift({ date: today, weights: weights, reps: repsF, max: Math.max.apply(null, weights) });
   histData.history = histData.history.slice(0, 10);
   try { localStorage.setItem(pkSkey(skey), JSON.stringify(histData)); } catch(e) {}
-  recordCheck(skey, weights);
+  if (!silent || doRecord) recordCheck(skey, weights);
 
   // Sync poids ET reps vers la carte principale
   document.querySelectorAll('.weight-tracker').forEach(wDiv => {
@@ -4704,8 +4782,8 @@ function focusSaveWeights(skey, setsCount) {
     cardInputs.forEach((inp, i) => { if (weights[i] != null) inp.value = weights[i]; });
     // Reps
     cardRepInps.forEach((inp, i) => { if (repsF && repsF[i] != null && repsF[i] > 0) inp.value = repsF[i]; });
-    // Indicateurs dernière séance
-    cardLasts.forEach((el, i) => {
+    // Indicateurs dernière séance (pas en sauvegarde auto : on garde la référence de la séance précédente)
+    if (!silent) cardLasts.forEach((el, i) => {
       const prev = parseFloat(el.dataset.last);
       el.dataset.last = weights[i];
       el.textContent  = '\u2196 ' + weights[i] + ' kg';
@@ -4717,6 +4795,7 @@ function focusSaveWeights(skey, setsCount) {
     });
     if (dateEl) dateEl.textContent = today;
   });
+  if (silent) return;
   // Sync aussi les checkboxes si toutes les séries sont complètes
   const focusCard = document.querySelector('.card[data-skey="'+skey+'"]') ||
     [...document.querySelectorAll('.weight-tracker')].find(w=>w.dataset.skey===skey)?.closest('.card');
@@ -4738,9 +4817,36 @@ function focusSaveWeights(skey, setsCount) {
 }
 
 
+/* Sauvegarde auto des charges/reps dès qu'au moins une série est validée */
+function focusAutoSaveLoads(doRecord, force) {
+  try {
+    if (!focusOverlay.classList.contains('show')) return;
+    const card = focusCards[focusIdx];
+    const wDiv = card && card.querySelector('.weight-tracker');
+    if (!wDiv) return;
+    const anyDone = document.querySelector('#focus-sets-tracker .set-cb.done');
+    if (!anyDone && !force) return;
+    focusSaveWeights(wDiv.dataset.skey, focusSetsCount(card), true, !!doRecord);
+  } catch(e) {}
+}
+
 function focusToggleSet(el, setNum, rest, exName) {
   el.classList.toggle('done');
   el.closest('.set-row').classList.toggle('set-done');
+
+  // Sauvegarder l'état des séries + synchroniser la case de l'exercice
+  try {
+    const card  = focusCards[focusIdx];
+    const cbs   = [...document.querySelectorAll('#focus-sets-tracker .set-cb')];
+    const flags = cbs.map(c => c.classList.contains('done'));
+    const all   = focusSetsLoadAll();
+    all[focusCardKey(card)] = flags;
+    focusSetsSaveAll(all);
+    const allDone = flags.length > 0 && flags.every(Boolean);
+    focusSetCardDone(card, allDone);
+    if (el.classList.contains('done')) focusAutoSaveLoads(allDone);
+  } catch(e) {}
+
   if (el.classList.contains('done')) {
     try { getAudio().resume(); } catch(e){}
     startTimer(rest, exName);
@@ -5260,6 +5366,7 @@ function adjW(btn, delta) {
   if (!input) return;
   const cur = parseFloat(input.value) || 0;
   input.value = Math.max(0, Math.round((cur + delta) * 10) / 10);
+  try { input.dispatchEvent(new Event('change', { bubbles: true })); } catch(e) {}
 }
 
 function saveWeights(btn) {
@@ -9167,16 +9274,20 @@ var PROFILE_CONFIG = {
   mathieu:  { name:'Mathieu',  color:'#00C853', initial:'M' },
   brigitte: { name:'Brigitte', color:'#FF6B35', initial:'B' },
   allison:  { name:'Allison',  color:'#A259FF', initial:'A' },
+  amelie:   { name:'Am\u00e9lie',  color:'#FF4081', initial:'A' },
+  chloe:    { name:'Chlo\u00e9',   color:'#2979FF', initial:'C' },
 };
 
 /* ── Storage des PIN ────────────────────────────────── */
+var PROFILE_DEFAULT_PINS = { mathieu:'0000', brigitte:'0000', allison:'0000', amelie:'2002', chloe:'2005' };
 function profilesLoad() {
+  var out = {};
+  Object.keys(PROFILE_DEFAULT_PINS).forEach(function(k){ out[k] = PROFILE_DEFAULT_PINS[k]; });
   try {
     var s = localStorage.getItem(PROFILES_KEY);
-    if (s) return JSON.parse(s);
+    if (s) { var saved = JSON.parse(s); Object.keys(saved).forEach(function(k){ out[k] = saved[k]; }); }
   } catch(e) {}
-  // PINs par défaut : 0000 pour tous
-  return { mathieu:'0000', brigitte:'0000', allison:'0000' };
+  return out;
 }
 function profilesSave(data) {
   try { localStorage.setItem(PROFILES_KEY, JSON.stringify(data)); } catch(e) {}
@@ -9701,6 +9812,8 @@ var PROFILE_DEFAULT_COLORS = {
   mathieu:  { color:'#00C853', rgb:'0,200,83'   },
   brigitte: { color:'#FF6B35', rgb:'255,107,53' },
   allison:  { color:'#A259FF', rgb:'162,89,255' },
+  amelie:   { color:'#FF4081', rgb:'255,64,129' },
+  chloe:    { color:'#2979FF', rgb:'41,121,255' },
 };
 
 function themeLoad() {
