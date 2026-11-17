@@ -923,6 +923,16 @@ body{
   border-bottom:1px solid var(--s4);
 }
 #schema-svg-wrap svg{max-width:100%;height:auto;max-height:200px}
+/* Animation départ ↔ arrivée + bouton vidéo */
+.ex-anim{position:relative;width:100%;text-align:center}
+.ex-anim img{max-width:100%;max-height:220px;border-radius:8px;object-fit:contain;display:block;margin:0 auto}
+.ex-anim-tag{position:absolute;top:6px;left:6px;font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1.5px;
+  padding:2px 7px;border-radius:6px;background:rgba(0,0,0,.65);color:#fff;pointer-events:none}
+.ex-video-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:calc(100% - 28px);margin:10px 14px 0;
+  padding:9px;border-radius:8px;text-decoration:none;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1.5px;
+  background:rgba(229,57,53,.12);color:#FF5252;border:1px solid rgba(229,57,53,.4)}
+.ex-video-btn:active{background:rgba(229,57,53,.25)}
+#lib-detail-video .ex-video-btn{width:100%;margin:0 0 10px}
 .schema-points{padding:10px 14px 14px}
 .schema-point{
   display:flex;gap:8px;align-items:flex-start;
@@ -2788,9 +2798,9 @@ body.modal-open #nav { display:none !important; }
   <!-- Mentions légales -->
   <div class="legal-link" onclick="openLegal()">MENTIONS L&Eacute;GALES &middot; &copy; 2026 MATHIEU NOUGU&Egrave;S</div>
 
-  <!-- Bouton sauvegarde données -->
+  <!-- Bouton paramètres -->
   <div class="home-backup-btn"  onclick="openBackup()" style="margin-bottom:10px">
-    &#x1F4BE; SAUVEGARDER / RESTAURER LES DONN&#xC9;ES
+    &#x2699;&#xFE0F; PARAM&#xC8;TRES
   </div>
 
   <div style="height:10px"></div>
@@ -3602,6 +3612,7 @@ body.modal-open #nav { display:none !important; }
       <div style="color:var(--dim);font-size:11px">Chargement...</div>
     </div>
     <div class="lib-detail-body">
+      <div id="lib-detail-video"></div>
       <div class="lib-rest-badge" id="lib-detail-rest">⏱ — s récup</div>
       <div class="lib-detail-focus" id="lib-detail-focus">—</div>
       <div class="lib-detail-pts"  id="lib-detail-pts"></div>
@@ -4065,6 +4076,7 @@ body.modal-open #nav { display:none !important; }
       <button class="schema-close" onclick="closeSchema()">&#x2715;</button>
     </div>
     <div id="schema-svg-wrap"></div>
+    <div id="schema-video"></div>
     <div class="schema-points" id="schema-points"></div>
   </div>
 </div>
@@ -4279,7 +4291,7 @@ body.modal-open #nav { display:none !important; }
 <div id="backup-modal" onclick="if(event.target===this)closeBackup()">
   <div class="backup-sheet">
     <div class="backup-handle"></div>
-    <div class="backup-title">&#x1F4BE; SAUVEGARDE DES DONN&#xC9;ES</div>
+    <div class="backup-title">&#x2699;&#xFE0F; PARAM&#xC8;TRES</div>
 
     <div class="backup-section">
       <div class="backup-sec-title">EXPORTER</div>
@@ -5419,35 +5431,35 @@ function saveWeights(btn) {
 }
 
 const EXERCISE_SCHEMAS = {
-  "Vélo ou Tapis": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Air_Bike/0.jpg", points: ["Rythme modéré, montée progressive", "Finir les 2 dernières min en accélération", "Active le système neuromusculaire"] },
-  "Squat Goblet": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Full_Squat/0.jpg", points: ["Pieds à largeur d'épaules, orteils légèrement ouverts", "Descente lente 3s, remontée explosive", "Genoux dans l'axe des orteils"] },
-  "Fentes Marchées": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Lunge/0.jpg", points: ["Grand pas en avant, genou avant à 90°", "Genou arrière effleure le sol", "Buste droit, regard devant"] },
+  "Vélo ou Tapis": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bicycling_Stationary/0.jpg", points: ["Rythme modéré, montée progressive", "Finir les 2 dernières min en accélération", "Active le système neuromusculaire"] },
+  "Squat Goblet": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Goblet_Squat/0.jpg", points: ["Pieds à largeur d'épaules, orteils légèrement ouverts", "Descente lente 3s, remontée explosive", "Genoux dans l'axe des orteils"] },
+  "Fentes Marchées": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lunges/0.jpg", points: ["Grand pas en avant, genou avant à 90°", "Genou arrière effleure le sol", "Buste droit, regard devant"] },
   "Leg Press Unilatéral": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg", points: ["Pied haut sur la plateforme", "Descente contrôlée jusqu'à 90°", "Commencer par la jambe la plus faible"] },
   "Romanian Deadlift": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg", points: ["Dos droit tout au long du mouvement", "Poussée des hanches en arrière (hip hinge)", "Descendre jusqu'à léger étirement ischio"] },
   "Step-up Explosif": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Step_Ups/0.jpg", points: ["Monter de façon explosive sur le step", "Genou montant haut en haut", "Descente contrôlée, pose douce"] },
   "Mollets Debout": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg", points: ["Amplitude complète — talon bas puis pointes", "Pause 1s en haut, serrer le mollet", "Descente lente 3s en excentrique"] },
   "Hip Thrust": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Hip_Thrust/0.jpg", points: ["Dos sur banc, pieds à plat au sol", "Poussée explosive des hanches vers le haut", "Serrer les fessiers 1s en haut"] },
-  "Étirements Statiques": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Childs_Pose/0.jpg", points: ["30s par muscle, sans rebond", "Ordre : quadri → ischio → fessier → mollet", "Respiration lente et profonde"] },
-  "Rameur Ergomètre": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Barbell_Row/0.jpg", points: ["Poussée des jambes en premier", "Puis bascule du buste en arrière", "Finir par la traction des bras"] },
-  "Tirage Poulie Haute": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Underhand_Cable_Pulldowns/0.jpg", points: ["Prise large pronation", "Tirer la barre vers le sternum", "Coudes bas et vers l'arrière"] },
-  "Tirage Horizontal Câble": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Bent_Over_Row/0.jpg", points: ["Tirer vers le nombril", "Serrer les omoplates en fin de mouvement", "Ne pas basculer le buste"] },
+  "Étirements Statiques": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hamstring_Stretch/0.jpg", points: ["30s par muscle, sans rebond", "Ordre : quadri → ischio → fessier → mollet", "Respiration lente et profonde"] },
+  "Rameur Ergomètre": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rowing_Stationary/0.jpg", points: ["Poussée des jambes en premier", "Puis bascule du buste en arrière", "Finir par la traction des bras"] },
+  "Tirage Poulie Haute": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg", points: ["Prise large pronation", "Tirer la barre vers le sternum", "Coudes bas et vers l'arrière"] },
+  "Tirage Horizontal Câble": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg", points: ["Tirer vers le nombril", "Serrer les omoplates en fin de mouvement", "Ne pas basculer le buste"] },
   "Rowing Haltère Unilatéral": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Dumbbell_Row/0.jpg", points: ["Main sur banc pour stabiliser", "Coude tiré haut, haltère longe le flanc", "Commencer par le côté le plus faible"] },
   "Shrugs Haltères": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shrug/0.jpg", points: ["Hausse d'épaules lente", "Maintien 1s en haut", "Pas de rotation des épaules"] },
-  "Extensions Lombaires": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg", points: ["Mouvement lent et contrôlé", "Dos droit, pas d'hyperextension", "Poids de corps d'abord"] },
+  "Extensions Lombaires": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hyperextensions_Back_Extensions/0.jpg", points: ["Mouvement lent et contrôlé", "Dos droit, pas d'hyperextension", "Poids de corps d'abord"] },
   "Face Pull Câble": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg", points: ["Câble à hauteur du visage", "Tirer vers le front en ouvrant les coudes", "Rotation externe des épaules"] },
-  "Bird-Dog": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Superman/0.jpg", points: ["Bras droit + jambe gauche simultanés", "Maintien 2s, colonne neutre", "Alterner les côtés sans déhanchement"] },
+  "Bird-Dog": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cat_Stretch/0.jpg", points: ["Bras droit + jambe gauche simultanés", "Maintien 2s, colonne neutre", "Alterner les côtés sans déhanchement"] },
   "Étirements Dos & Épaules": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Childs_Pose/0.jpg", points: ["Grand dorsal accroché à la barre", "Cat-cow 10 reps lentes", "Child pose 60s pour finir"] },
-  "Élastiques + Rotations": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Press/0.jpg", points: ["Rotations externes élastique 2x15", "Arm circles 30s", "10 push-up genoux lents"] },
+  "Élastiques + Rotations": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/External_Rotation_with_Band/0.jpg", points: ["Rotations externes élastique 2x15", "Arm circles 30s", "10 push-up genoux lents"] },
   "Développé Couché Haltères": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Press/0.jpg", points: ["Omoplates serrées sur le banc", "Descente lente 3s", "Poussée explosive vers le haut"] },
-  "Écarté Câble Bas": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crossover/0.jpg", points: ["Arc du bas vers le haut", "Bras quasi tendus", "Contraction forte en haut"] },
-  "Push-up Lesté / Classique": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Up_Wide/0.jpg", points: ["Corps gainé tête-talons", "Coudes à 45° du corps", "Poitrine effleure le sol"] },
+  "Écarté Câble Bas": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Low_Cable_Crossover/0.jpg", points: ["Arc du bas vers le haut", "Bras quasi tendus", "Contraction forte en haut"] },
+  "Push-up Lesté / Classique": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups/0.jpg", points: ["Corps gainé tête-talons", "Coudes à 45° du corps", "Poitrine effleure le sol"] },
   "Développé Militaire Haltères": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Shoulder_Press/0.jpg", points: ["Haltères à hauteur d'oreilles", "Poussée verticale sans cambrer", "Assis pour isoler les épaules"] },
   "Élévations Latérales": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/0.jpg", points: ["Bras quasi tendus", "Montée jusqu'à l'horizontale max", "Petit doigt vers le haut"] },
   "Curl Haltères Alterné": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Alternate_Bicep_Curl/0.jpg", points: ["Coudes fixes aux flancs", "Rotation du poignet vers l'extérieur en montant", "Alterner les bras"] },
-  "Triceps Poulie Haute (Corde)": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/0.jpg", points: ["Coudes fixes aux flancs", "Pousser vers le bas en écartant la corde", "Contraction complète en bas"] },
-  "Curl Marteau": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cross_Body_Hammer_Curl/0.jpg", points: ["Prise neutre — pouces vers le haut", "Coudes fixes, montée contrôlée", "Renforce le brachioradial"] },
+  "Triceps Poulie Haute (Corde)": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown_-_Rope_Attachment/0.jpg", points: ["Coudes fixes aux flancs", "Pousser vers le bas en écartant la corde", "Contraction complète en bas"] },
+  "Curl Marteau": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Curls/0.jpg", points: ["Prise neutre — pouces vers le haut", "Coudes fixes, montée contrôlée", "Renforce le brachioradial"] },
   "Dips Banc": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Dips/0.jpg", points: ["Mains sur banc, pieds tendus", "Descendre jusqu'à 90° au coude", "Poussée explosive vers le haut"] },
-  "Étirements Pecs & Bras": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Childs_Pose/0.jpg", points: ["Pec au mur 30s de chaque côté", "Triceps tête 30s de chaque côté", "Cross-body épaule 20s de chaque côté"] },
+  "Étirements Pecs & Bras": { img: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chest_And_Front_Of_Shoulder_Stretch/0.jpg", points: ["Pec au mur 30s de chaque côté", "Triceps tête 30s de chaque côté", "Cross-body épaule 20s de chaque côté"] },
 };
 
 
@@ -5489,12 +5501,54 @@ function getSchemaForExercise(name) {
   return null;
 }
 
+/* ── Photo animée : alterne position de départ (0.jpg) et d'arrivée (1.jpg) ── */
+function exAnimStop(wrap) {
+  if (wrap && wrap._animTimer) { clearInterval(wrap._animTimer); wrap._animTimer = null; }
+}
+function exAnimLoad(url) {
+  return fetch(url, { mode: 'cors', cache: 'force-cache' })
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+    .then(function(b){ return URL.createObjectURL(b); });
+}
+function exAnimInto(wrap, url0, name, onFail) {
+  exAnimStop(wrap);
+  var url1 = /\/0\.jpg$/.test(url0) ? url0.replace(/\/0\.jpg$/, '/1.jpg') : null;
+  var token = {};
+  wrap._animToken = token;
+  return exAnimLoad(url0).then(function(src0) {
+    if (wrap._animToken !== token) return;
+    var box = document.createElement('div'); box.className = 'ex-anim';
+    var img = document.createElement('img'); img.alt = name; img.src = src0;
+    var tag = document.createElement('div'); tag.className = 'ex-anim-tag'; tag.textContent = 'D\u00c9PART';
+    box.appendChild(img);
+    wrap.innerHTML = ''; wrap.appendChild(box);
+    if (!url1) return;
+    return exAnimLoad(url1).then(function(src1) {
+      if (wrap._animToken !== token) return;
+      box.appendChild(tag);
+      var frames = [src0, src1], labels = ['D\u00c9PART', 'ARRIV\u00c9E'], k = 0;
+      wrap._animTimer = setInterval(function() {
+        if (!document.body.contains(img)) { exAnimStop(wrap); return; }
+        k = 1 - k; img.src = frames[k]; tag.textContent = labels[k];
+      }, 1100);
+    }).catch(function(){ /* pas de 2e photo : on garde l'image fixe */ });
+  }).catch(function() {
+    if (wrap._animToken !== token) return;
+    if (onFail) onFail();
+  });
+}
+function exVideoBtnHTML(name) {
+  var q = encodeURIComponent(name + ' exercice musculation technique');
+  return '<a class="ex-video-btn" href="https://www.youtube.com/results?search_query=' + q + '" target="_blank" rel="noopener">\u25B6 VOIR UNE VID\u00c9O</a>';
+}
+
 function openSchema(exName) {
   var data = getSchemaForExercise(exName);
   if (!data) return;
   document.getElementById('schema-ex-name').textContent = exName;
 
   var wrap = document.getElementById('schema-svg-wrap');
+  exAnimStop(wrap); wrap._animToken = null;
   wrap.innerHTML = '';
 
   if (data.img) {
@@ -5513,34 +5567,24 @@ function openSchema(exName) {
     div.appendChild(fallback);
     wrap.appendChild(div);
 
-    // Charger via fetch → blob URL (évite les soucis de cache navigateur)
-    fetch(data.img, { mode: 'cors', cache: 'force-cache' })
-      .then(function(r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.blob();
-      })
-      .then(function(blob) {
-        var burl = URL.createObjectURL(blob);
-        var img  = document.createElement('img');
-        img.alt  = exName;
-        img.style.cssText = 'max-width:100%;max-height:220px;border-radius:8px;object-fit:contain;display:block;margin:0 auto';
-        img.src  = burl;
-        loader.replaceWith(img);
-      })
-      .catch(function() {
-        loader.style.display  = 'none';
-        fallback.style.display = 'block';
-      });
+    exAnimInto(wrap, data.img, exName, function() {
+      loader.style.display  = 'none';
+      fallback.style.display = 'block';
+    });
   } else {
     wrap.innerHTML = '<div style="color:#666;font-size:11px;padding:24px;text-align:center">Aucun schéma disponible</div>';
   }
 
+  var vEl = document.getElementById('schema-video');
+  if (vEl) vEl.innerHTML = exVideoBtnHTML(exName);
   document.getElementById('schema-points').innerHTML = data.points.map(function(p,i) {
     return '<div class="schema-point"><div class="schema-point-num">'+(i+1)+'</div><div>'+p+'</div></div>';
   }).join('');
   document.getElementById('schema-modal').classList.add('show');
 }
 function closeSchema() {
+  exAnimStop(document.getElementById('schema-svg-wrap'));
+  document.getElementById('schema-svg-wrap')._animToken = null;
   document.getElementById('schema-modal').classList.remove('show');
 }
 
@@ -5583,7 +5627,7 @@ const EXERCISE_LIBRARY = {
         "name": "Squat Goblet",
         "equipment": "Haltère / Kettlebell",
         "focus": "Quadriceps · Fessiers · Gainage",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Full_Squat/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Goblet_Squat/0.jpg",
         "rest": 75,
         "points": [
           "Pieds à largeur d'épaules",
@@ -5611,7 +5655,7 @@ const EXERCISE_LIBRARY = {
         "name": "Fentes Marchées",
         "equipment": "Haltères",
         "focus": "Quadriceps · Fessiers · Stabilité",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Lunge/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lunges/0.jpg",
         "rest": 60,
         "points": [
           "Grand pas en avant",
@@ -5625,7 +5669,7 @@ const EXERCISE_LIBRARY = {
         "name": "Fentes Bulgares",
         "equipment": "Haltères / Barre",
         "focus": "Quadriceps · Fessiers · Équilibre",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Step_Ups/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Split_Squat_with_Dumbbells/0.jpg",
         "rest": 75,
         "points": [
           "Pied arrière surélevé sur banc",
@@ -5772,7 +5816,7 @@ const EXERCISE_LIBRARY = {
         "name": "Tirage Poulie Haute",
         "equipment": "Câble / Poulie",
         "focus": "Grand dorsal · Biceps · Omoplates",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Underhand_Cable_Pulldowns/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg",
         "rest": 75,
         "points": [
           "Prise large pronation",
@@ -5786,7 +5830,7 @@ const EXERCISE_LIBRARY = {
         "name": "Tirage Horizontal Câble",
         "equipment": "Câble",
         "focus": "Grand dorsal moyen · Rhomboïdes",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Bent_Over_Row/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg",
         "rest": 60,
         "points": [
           "Tirer vers le nombril",
@@ -5828,7 +5872,7 @@ const EXERCISE_LIBRARY = {
         "name": "Tirage Prise Neutre",
         "equipment": "Câble",
         "focus": "Grand dorsal · Biceps · Coiffe",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Underhand_Cable_Pulldowns/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/V-Bar_Pulldown/0.jpg",
         "rest": 75,
         "points": [
           "Prise neutre (paumes face à face)",
@@ -5842,7 +5886,7 @@ const EXERCISE_LIBRARY = {
         "name": "Tractions",
         "equipment": "Barre de traction",
         "focus": "Grand dorsal · Biceps · Poids corps",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chin-Up/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pullups/0.jpg",
         "rest": 90,
         "points": [
           "Prise pronation large",
@@ -5870,7 +5914,7 @@ const EXERCISE_LIBRARY = {
         "name": "Extensions Lombaires",
         "equipment": "Machine / GHD",
         "focus": "Érecteurs spinaux · Lombaires",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hyperextensions_Back_Extensions/0.jpg",
         "rest": 60,
         "points": [
           "Mouvement lent et contrôlé",
@@ -5898,7 +5942,7 @@ const EXERCISE_LIBRARY = {
         "name": "Bird-Dog",
         "equipment": "Poids de corps",
         "focus": "Chaîne postérieure · Coordination",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Superman/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cat_Stretch/0.jpg",
         "rest": 30,
         "points": [
           "Bras droit + jambe gauche simultanés",
@@ -5933,7 +5977,7 @@ const EXERCISE_LIBRARY = {
         "name": "Développé Couché Barre",
         "equipment": "Barre",
         "focus": "Pectoraux · Force maximale",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Shoulder_Raise/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg",
         "rest": 90,
         "points": [
           "Prise légèrement plus large que les épaules",
@@ -5961,7 +6005,7 @@ const EXERCISE_LIBRARY = {
         "name": "Écarté Câble Bas",
         "equipment": "Câble",
         "focus": "Pectoraux internes · Finition",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crossover/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Low_Cable_Crossover/0.jpg",
         "rest": 60,
         "points": [
           "Arc du bas vers le haut",
@@ -5989,7 +6033,7 @@ const EXERCISE_LIBRARY = {
         "name": "Push-up / Pompe",
         "equipment": "Poids de corps",
         "focus": "Pectoraux · Triceps · Gainage",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Up_Wide/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups/0.jpg",
         "rest": 45,
         "points": [
           "Corps gainé tête-talons",
@@ -6003,7 +6047,7 @@ const EXERCISE_LIBRARY = {
         "name": "Pec Deck / Machine",
         "equipment": "Machine",
         "focus": "Pectoraux · Isolation pure",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Chest_Press/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butterfly/0.jpg",
         "rest": 60,
         "points": [
           "Dos collé au dossier",
@@ -6171,7 +6215,7 @@ const EXERCISE_LIBRARY = {
         "name": "Curl Marteau",
         "equipment": "Haltères",
         "focus": "Brachioradial · Avant-bras",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cross_Body_Hammer_Curl/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Curls/0.jpg",
         "rest": 60,
         "points": [
           "Prise neutre (pouces vers le haut)",
@@ -6185,7 +6229,7 @@ const EXERCISE_LIBRARY = {
         "name": "Curl Câble",
         "equipment": "Câble",
         "focus": "Biceps · Tension constante",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Alternate_Hammer_Curl/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Biceps_Cable_Curl/0.jpg",
         "rest": 60,
         "points": [
           "Tension constante tout le mouvement",
@@ -6199,7 +6243,7 @@ const EXERCISE_LIBRARY = {
         "name": "Curl Concentré",
         "equipment": "Haltère",
         "focus": "Biceps · Pic musculaire",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Dumbbell_Curl/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Concentration_Curls/0.jpg",
         "rest": 60,
         "points": [
           "Coude posé contre la cuisse",
@@ -6234,7 +6278,7 @@ const EXERCISE_LIBRARY = {
         "name": "Triceps Poulie Haute (Corde)",
         "equipment": "Câble",
         "focus": "Triceps · Extension du coude",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown_-_Rope_Attachment/0.jpg",
         "rest": 60,
         "points": [
           "Coudes fixes aux flancs",
@@ -6262,7 +6306,7 @@ const EXERCISE_LIBRARY = {
         "name": "Skull Crusher (EZ Bar)",
         "equipment": "Barre EZ",
         "focus": "Triceps · Chef long",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Floor_Press/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/EZ-Bar_Skullcrusher/0.jpg",
         "rest": 75,
         "points": [
           "Allongé sur banc",
@@ -6290,7 +6334,7 @@ const EXERCISE_LIBRARY = {
         "name": "Kickback Triceps",
         "equipment": "Haltère",
         "focus": "Triceps · Chef latéral",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Stretch/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Tricep_Dumbbell_Kickback/0.jpg",
         "rest": 45,
         "points": [
           "Buste penché à 90°",
@@ -6304,7 +6348,7 @@ const EXERCISE_LIBRARY = {
         "name": "Développé Serré",
         "equipment": "Barre",
         "focus": "Triceps · Pecs internes",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Up_Wide/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Barbell_Bench_Press/0.jpg",
         "rest": 75,
         "points": [
           "Prise serrée (épaules de largeur)",
@@ -6409,7 +6453,7 @@ const EXERCISE_LIBRARY = {
         "name": "Bird-Dog",
         "equipment": "Poids de corps",
         "focus": "Chaîne post. · Core · Coordination",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Superman/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cat_Stretch/0.jpg",
         "rest": 30,
         "points": [
           "À 4 pattes, dos plat",
@@ -6423,7 +6467,7 @@ const EXERCISE_LIBRARY = {
         "name": "Crunch Oblique",
         "equipment": "Poids de corps",
         "focus": "Obliques · Rotation",
-        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Side_Bend/0.jpg",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Oblique_Crunches_-_On_The_Floor/0.jpg",
         "rest": 30,
         "points": [
           "Rotation vers le genou opposé",
@@ -6600,15 +6644,11 @@ function openLibDetail(groupId, exId) {
 
   var imgWrap = document.getElementById('lib-detail-img-wrap');
   imgWrap.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:16px">Chargement...</div>';
-  fetch(ex.img, { mode: 'cors', cache: 'force-cache' })
-    .then(function(r){ if (!r.ok) throw new Error(''); return r.blob(); })
-    .then(function(blob){
-      var url = URL.createObjectURL(blob);
-      imgWrap.innerHTML = '<img src="' + url + '" alt="' + ex.name + '" style="width:100%;max-height:200px;object-fit:contain;display:block;background:var(--s2);padding:8px">';
-    })
-    .catch(function(){
-      imgWrap.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:16px;text-align:center">Image indisponible</div>';
-    });
+  exAnimInto(imgWrap, ex.img, ex.name, function() {
+    imgWrap.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:16px;text-align:center">Image indisponible</div>';
+  });
+  var libVid = document.getElementById('lib-detail-video');
+  if (libVid) libVid.innerHTML = exVideoBtnHTML(ex.name);
 
   // Bouton action selon le mode
   var actionsEl = document.getElementById('lib-detail-actions');
@@ -6633,6 +6673,8 @@ function openLibDetail(groupId, exId) {
 }
 
 function closeLibDetail() {
+  var lw = document.getElementById('lib-detail-img-wrap');
+  exAnimStop(lw); if (lw) lw._animToken = null;
   document.getElementById('lib-detail-modal').classList.remove('show');
 }
 
