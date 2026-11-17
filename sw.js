@@ -6,9 +6,9 @@
 */
 const CACHE       = 'rize-app-v2';      // NE PAS CHANGER ce nom
 const STATIC      = [
-  '/rize-app/manifest.json',
-  '/rize-app/icon-192.png',
-  '/rize-app/icon-512.png',
+  '/forge-app/manifest.json',
+  '/forge-app/icon-192.png',
+  '/forge-app/icon-512.png',
 ];
 
 self.addEventListener('install', e => {
@@ -31,7 +31,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
   // index.html → network-first : toujours chercher la dernière version
-  if (url.pathname === '/rize-app/' || url.pathname === '/rize-app/index.html') {
+  if (url.pathname === '/forge-app/' || url.pathname === '/forge-app/index.html') {
     e.respondWith(
       fetch(e.request)
         .then(resp => {
