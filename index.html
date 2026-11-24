@@ -2478,6 +2478,28 @@ body.modal-open #nav { display:none !important; }
   width: 26px; height: 26px; flex-shrink: 0;
 }
 
+/* ── EN-TÊTE DE CARTE SUR 2 LIGNES ──────────────────────
+   Ligne 1 : numéro + nom + muscles (pleine largeur, plus jamais écrasés)
+   Ligne 2 : séries / reps à gauche, boutons à droite (graphique, focus, 💬, case, 🔄, 📐, ↩ …)
+   Avant : tout sur une seule ligne -> avec 5-6 boutons le nom tombait à 0-27 px de large. */
+.card-header { flex-wrap: wrap; row-gap: 6px; }
+.card-header .ex-num  { order: 1 }
+.card-header .ex-info { order: 2; flex: 1 1 0; min-width: 0 }
+.card-header::after   { content: ''; order: 3; flex: 0 0 100%; height: 0 }          /* saut de ligne */
+.card-header > :not(.ex-num):not(.ex-info) { order: 4 }
+.card-header .ex-metrics { margin-right: auto }
+.card-header .ex-name  { font-size: 15px }
+.card-header .ex-focus { white-space: normal; line-height: 1.3 }
+/* petits écrans : on resserre pour que la ligne 2 tienne sans retour à la ligne */
+@media (max-width: 400px) {
+  .card-header { gap: 3px }
+  .card-header .prog-btn, .card-header .schema-btn, .card-header .replace-btn, .card-header .focus-btn-inline { width: 26px; height: 26px }
+  .card-header .cb { width: 24px; height: 24px }
+  .card-header .metric { padding: 3px 6px; min-width: 38px }
+  .card-header .ex-metrics { gap: 4px }
+  .card-header .lib-reset-btn { padding: 3px 6px }
+}
+
 /* ══ MENTIONS LÉGALES ══════════════════════════════ */
 #legal-modal {
   display: none; position: fixed; top:0;right:0;bottom:0;left:0;
