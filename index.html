@@ -1091,10 +1091,18 @@ body{
 .lib-detail-sheet{
   background:var(--s1);border-radius:16px 16px 0 0;
   width:100%;max-width:480px;
-  max-height:88vh;overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  padding-bottom:env(safe-area-inset-bottom,0px);
+  max-height:88vh;max-height:88dvh;
+  display:flex;flex-direction:column;overflow:hidden;
 }
+/* seule cette zone défile ; le pied (bouton) reste fixé en bas de la fiche */
+.lib-detail-scroll{
+  flex:1 1 auto;min-height:0;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
+/* fiche ouverte : la bibliothèque derrière ne doit plus pouvoir défiler (le doigt ne « traverse » plus) */
+body.lib-open #scroll-area{overflow:hidden}
+body.lib-open #nav{display:none!important}
 .lib-detail-handle{
   width:36px;height:4px;background:var(--s4);
   border-radius:2px;margin:10px auto 6px;
@@ -1132,7 +1140,8 @@ body{
   background:var(--s2);padding:8px;display:block;
   border-bottom:1px solid var(--s4);
 }
-.lib-detail-body{padding:14px 16px 20px}
+.lib-detail-body{padding:14px 16px calc(20px + env(safe-area-inset-bottom,0px))}
+.lib-detail-sheet.has-actions .lib-detail-body{padding-bottom:14px}
 .lib-detail-focus{
   font-size:12px;color:#A259FF;margin-bottom:10px;
   font-family:'Bebas Neue',sans-serif;letter-spacing:1px;
@@ -1191,7 +1200,12 @@ body{
 }
 
 /* ── BOUTON CHOISIR DANS LE POPUP ───────────────────── */
-#lib-detail-actions{margin-top:12px}
+#lib-detail-actions{
+  flex:0 0 auto;margin:0;
+  padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));
+  background:var(--s1);border-top:1px solid var(--s4);
+}
+#lib-detail-actions:empty{display:none}
 .lib-choose-btn{
   font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;
   width:100%;padding:13px;border-radius:8px;border:none;cursor:pointer;
@@ -3755,34 +3769,6 @@ body.modal-open #nav { display:none !important; }
 
 </div><!-- /page-biblio -->
 
-<!-- ══ POPUP DÉTAIL EXERCICE BIBLIO ═════════════════════ -->
-<div id="lib-detail-modal" onclick="if(event.target===this)closeLibDetail()">
-  <div class="lib-detail-sheet">
-    <div class="lib-detail-handle"></div>
-    <div class="lib-detail-head">
-      <div class="lib-detail-thumb"><img id="lib-detail-thumb-img" src="" alt=""></div>
-      <div class="lib-detail-meta">
-        <div class="lib-detail-group" id="lib-detail-group">—</div>
-        <div class="lib-detail-name"  id="lib-detail-name">—</div>
-        <div class="lib-detail-equip" id="lib-detail-equip">—</div>
-      </div>
-      <button class="lib-detail-close" onclick="closeLibDetail()">✕</button>
-    </div>
-    <div id="lib-detail-img-wrap" style="background:var(--s2);border-bottom:1px solid var(--s4);min-height:80px;display:flex;align-items:center;justify-content:center">
-      <div style="color:var(--dim);font-size:11px">Chargement...</div>
-    </div>
-    <div class="lib-detail-body">
-      <div id="lib-detail-video"></div>
-      <div class="lib-rest-badge" id="lib-detail-rest">⏱ — s récup</div>
-      <div class="lib-detail-focus" id="lib-detail-focus">—</div>
-      <div class="lib-detail-pts"  id="lib-detail-pts"></div>
-      <div class="lib-detail-tip"  id="lib-detail-tip"></div>
-      <div id="lib-detail-actions"></div>
-    </div>
-  </div>
-</div>
-
-
 <!-- ══════════════════════════════════════════════════════
      TAB: SÉANCE LIBRE
 ══════════════════════════════════════════════════════════ -->
@@ -4417,6 +4403,38 @@ body.modal-open #nav { display:none !important; }
       <button class="notes-filter-btn" data-session="libre" onclick="filterNotes(this)">Libre</button>
     </div>
     <div class="notes-history-list" id="notes-history-list"></div>
+  </div>
+</div>
+
+<!-- ══ POPUP DÉTAIL EXERCICE BIBLIO ═════════════════════
+     Placée HORS de #scroll-area (comme les autres modales) : sur iPhone, un conteneur à défilement tactile
+     passe au-dessus de tout, la fiche se retrouvait sous la barre du bas et le bouton devenait inatteignable.
+     Le bouton d'action est dans un pied fixe : toujours visible, sans avoir à défiler. -->
+<div id="lib-detail-modal" onclick="if(event.target===this)closeLibDetail()">
+  <div class="lib-detail-sheet">
+    <div class="lib-detail-scroll" id="lib-detail-scroll">
+      <div class="lib-detail-handle"></div>
+      <div class="lib-detail-head">
+        <div class="lib-detail-thumb"><img id="lib-detail-thumb-img" src="" alt=""></div>
+        <div class="lib-detail-meta">
+          <div class="lib-detail-group" id="lib-detail-group">—</div>
+          <div class="lib-detail-name"  id="lib-detail-name">—</div>
+          <div class="lib-detail-equip" id="lib-detail-equip">—</div>
+        </div>
+        <button class="lib-detail-close" onclick="closeLibDetail()">✕</button>
+      </div>
+      <div id="lib-detail-img-wrap" style="background:var(--s2);border-bottom:1px solid var(--s4);min-height:80px;display:flex;align-items:center;justify-content:center">
+        <div style="color:var(--dim);font-size:11px">Chargement...</div>
+      </div>
+      <div class="lib-detail-body">
+        <div id="lib-detail-video"></div>
+        <div class="lib-rest-badge" id="lib-detail-rest">⏱ — s récup</div>
+        <div class="lib-detail-focus" id="lib-detail-focus">—</div>
+        <div class="lib-detail-pts"  id="lib-detail-pts"></div>
+        <div class="lib-detail-tip"  id="lib-detail-tip"></div>
+      </div>
+    </div>
+    <div id="lib-detail-actions"></div>
   </div>
 </div>
 
@@ -6919,6 +6937,10 @@ function openLibDetail(groupId, exId) {
     }
   }
 
+  var sheetEl = document.querySelector('.lib-detail-sheet');
+  if (sheetEl) sheetEl.classList.toggle('has-actions', !!(actionsEl && actionsEl.innerHTML));
+  var scEl = document.getElementById('lib-detail-scroll'); if (scEl) scEl.scrollTop = 0;
+  document.body.classList.add('lib-open');
   document.getElementById('lib-detail-modal').classList.add('show');
 }
 
@@ -6926,6 +6948,7 @@ function closeLibDetail() {
   var lw = document.getElementById('lib-detail-img-wrap');
   exAnimStop(lw); if (lw) lw._animToken = null;
   document.getElementById('lib-detail-modal').classList.remove('show');
+  document.body.classList.remove('lib-open');
 }
 
 function initLibrary() {
