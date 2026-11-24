@@ -1389,7 +1389,7 @@ body{
   font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1.5px;
   padding:10px 20px;border-radius:10px;
   opacity:0;transition:opacity .3s,transform .3s;
-  z-index:700;pointer-events:none;white-space:nowrap;
+  z-index:10200;pointer-events:none;white-space:normal;max-width:88vw;text-align:center;
   box-shadow:0 4px 20px rgba(0,0,0,.4);
 }
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -2636,6 +2636,10 @@ body.modal-open #nav { display:none !important; }
 .rz-card-bot{display:flex;gap:8px;margin-top:8px}
 .rz-inv{margin:0!important;padding:9px 11px!important;font-size:14px!important;flex:1;min-width:0}
 .rz-save{min-width:58px}
+.rz-inv-msg{font-size:11px;line-height:1.4;margin-top:6px;min-height:0}
+.rz-inv-msg:empty{display:none}
+.rz-inv-msg.ok{color:#00C853}
+.rz-inv-msg.err{color:#FF5252}
 </style>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#080808">
@@ -10531,6 +10535,9 @@ function rzErrFr(e) {
   if (/rate limit|too many/i.test(m)) return 'Trop d’essais, attends quelques minutes.';
   if (/Failed to fetch|NetworkError|network|Load failed|fetch/i.test(m)) return 'Pas de connexion au serveur';
   if (/row-level security|42501/i.test(m)) return 'Accès refusé pour ce profil.';
+  if (/Could not find the function|schema cache|PGRST202/i.test(m)) return 'Fonction introuvable : le script de l\u2019étape 1b n\u2019est pas installé';
+  if (/permission denied/i.test(m)) return 'Permission refusée par la base';
+  if (/JWT|token/i.test(m)) return 'Session expirée : déconnecte-toi puis reconnecte-toi';
   return m;
 }
 
@@ -10675,8 +10682,10 @@ function rzOpenAdmin() {
         + '<div class="rz-dim">Dernière donnée reçue : ' + rzFmtAgo(last[p]) + '</div></div>'
         + '<button class="rz-mini" onclick="rzAdminOpenProfile(\'' + p + '\')">OUVRIR</button></div>';
       if (p !== 'mathieu') {
-        html += '<div class="rz-card-bot"><input class="rz-input rz-inv" id="rz-inv-' + p + '" type="email" inputmode="email" autocomplete="off" placeholder="email de ' + rzEsc(c.name) + '" value="' + rzEsc(invites[p] || '') + '">'
-          + '<button class="rz-mini rz-save" id="rz-invbtn-' + p + '" onclick="rzAdminSaveInvite(\'' + p + '\')">OK</button></div>';
+        html += '<div class="rz-card-bot"><input class="rz-input rz-inv" id="rz-inv-' + p + '" type="email" inputmode="email" autocomplete="off" placeholder="email de ' + rzEsc(c.name) + '" value="' + rzEsc(invites[p] || '') + '"'
+          + ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();rzAdminSaveInvite(\'' + p + '\');}">'
+          + '<button class="rz-mini rz-save" id="rz-invbtn-' + p + '" onclick="rzAdminSaveInvite(\'' + p + '\')">OK</button></div>'
+          + '<div class="rz-inv-msg" id="rz-invmsg-' + p + '"></div>';
       }
       html += '</div>';
     });
@@ -10702,29 +10711,45 @@ function rzOpenAdmin() {
 }
 function rzCloseAdmin() { var o = rzEl('rz-admin'); if (o) o.classList.remove('show'); }
 
+function rzInvMsg(p, txt, ok) {
+  var m = rzEl('rz-invmsg-' + p); if (!m) return;
+  m.textContent = txt || '';
+  m.className = 'rz-inv-msg' + (ok ? ' ok' : (txt ? ' err' : ''));
+}
 function rzAdminSetInvite(p, email, okMsg) {
+  var btn = rzEl('rz-invbtn-' + p);
+  if (btn) { btn.disabled = true; btn.textContent = '\u2026'; }
+  rzInvMsg(p, 'Enregistrement\u2026', true);
+  var fail = function(err) {
+    var raw = (err && (err.message || err.msg)) || String(err || 'erreur inconnue');
+    try { console.error('[RIZE admin]', err); } catch(e) {}
+    if (btn) { btn.disabled = false; btn.textContent = 'OK'; btn.dataset.confirm = ''; }
+    rzInvMsg(p, '\u26A0\uFE0F ' + rzErrFr(err) + (rzErrFr(err) !== raw ? ' (' + raw + ')' : ''), false);
+    showToast('\u26A0\uFE0F ' + rzErrFr(err), 'rgba(229,57,53,.95)');
+    return false;
+  };
   return RZ.sb.rpc('admin_set_invite', { p: p, e: email }).then(function(res) {
-    if (res.error) { showToast(rzErrFr(res.error), 'rgba(229,57,53,.9)'); return false; }
-    showToast(okMsg, 'rgba(0,200,83,.9)');
+    if (res.error) return fail(res.error);
+    showToast(okMsg, 'rgba(0,200,83,.95)');
     rzOpenAdmin();
     return true;
-  });
+  }, fail);
 }
 function rzAdminSaveInvite(p) {
   var inp = rzEl('rz-inv-' + p), btn = rzEl('rz-invbtn-' + p);
   if (!inp || !btn) return;
   var email = (inp.value || '').trim().toLowerCase();
   var name = PROFILE_CONFIG[p].name;
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Email invalide', 'rgba(229,57,53,.9)'); return; }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { rzInvMsg(p, '\u26A0\uFE0F Email invalide', false); return; }
   var acc = RZ_ADMIN.members.filter(function(m) { return m.profile_id === p; })[0];
   // Changer/retirer l'email d'un profil déjà utilisé coupe l'accès de ce compte → on demande de confirmer
   if (acc && acc.email !== email && btn.dataset.confirm !== '1') {
-    btn.dataset.confirm = '1'; btn.textContent = 'SÛR ?';
-    showToast((email ? 'Le compte ' : 'Retirer l’accès de ') + acc.email + (email ? ' perdra l’accès à ' + name : ' à ' + name) + ' : appuie sur SÛR ? pour confirmer', 'rgba(255,179,0,.9)');
-    setTimeout(function() { if (btn) { btn.dataset.confirm = ''; btn.textContent = 'OK'; } }, 5000);
+    btn.dataset.confirm = '1'; btn.textContent = 'S\u00dbR ?';
+    rzInvMsg(p, (email ? acc.email + ' perdra l\u2019acc\u00e8s \u00e0 ' + name : 'Retirer l\u2019acc\u00e8s de ' + acc.email) + ' \u2192 appuie sur S\u00dbR ? pour confirmer', false);
+    setTimeout(function() { if (btn && btn.dataset.confirm === '1') { btn.dataset.confirm = ''; btn.textContent = 'OK'; rzInvMsg(p, ''); } }, 6000);
     return;
   }
-  rzAdminSetInvite(p, email, email ? '✓ ' + name + ' : ' + email : '✓ Accès retiré pour ' + name);
+  rzAdminSetInvite(p, email, email ? '\u2713 ' + name + ' : ' + email : '\u2713 Acc\u00e8s retir\u00e9 pour ' + name);
 }
 function rzAdminLink(uid) {
   var sel = rzEl('rz-sel-' + uid); if (!sel) return;
