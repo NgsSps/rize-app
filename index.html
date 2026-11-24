@@ -924,8 +924,11 @@ body{
 }
 #schema-svg-wrap svg{max-width:100%;height:auto;max-height:200px}
 /* Animation départ ↔ arrivée + bouton vidéo */
-.ex-anim{position:relative;width:100%;text-align:center}
-.ex-anim img{max-width:100%;max-height:220px;border-radius:8px;object-fit:contain;display:block;margin:0 auto}
+.ex-anim{position:relative;width:100%;height:210px}
+.ex-anim img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;border-radius:8px;display:block;transition:opacity .25s}
+.ex-anim img.ex-b{opacity:0}
+.ex-anim.alt img.ex-b{opacity:1}
+.ex-anim.alt img.ex-a{opacity:0}
 .ex-anim-tag{position:absolute;top:6px;left:6px;font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1.5px;
   padding:2px 7px;border-radius:6px;background:rgba(0,0,0,.65);color:#fff;pointer-events:none}
 .ex-video-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:calc(100% - 28px);margin:10px 14px 0;
@@ -5757,25 +5760,30 @@ function exAnimInto(wrap, url0, name, onFail) {
   var url1 = /\/0\.jpg$/.test(url0) ? url0.replace(/\/0\.jpg$/, '/1.jpg') : null;
   var token = {};
   wrap._animToken = token;
+  wrap.style.minHeight = '210px';            // hauteur réservée : la fiche ne saute pas au chargement
   return exAnimLoad(url0).then(function(src0) {
     if (wrap._animToken !== token) return;
     var box = document.createElement('div'); box.className = 'ex-anim';
-    var img = document.createElement('img'); img.alt = name; img.src = src0;
-    var tag = document.createElement('div'); tag.className = 'ex-anim-tag'; tag.textContent = 'D\u00c9PART';
-    box.appendChild(img);
+    var imgA = document.createElement('img'); imgA.alt = name; imgA.src = src0; imgA.className = 'ex-a';
+    var tag = document.createElement('div'); tag.className = 'ex-anim-tag'; tag.textContent = 'DÉPART';
+    box.appendChild(imgA);
     wrap.innerHTML = ''; wrap.appendChild(box);
     if (!url1) return;
     return exAnimLoad(url1).then(function(src1) {
       if (wrap._animToken !== token) return;
+      // 2e photo superposée : on alterne en fondu, sans jamais changer la taille de la fiche
+      var imgB = document.createElement('img'); imgB.alt = name; imgB.src = src1; imgB.className = 'ex-b';
+      box.appendChild(imgB);
       box.appendChild(tag);
-      var frames = [src0, src1], labels = ['D\u00c9PART', 'ARRIV\u00c9E'], k = 0;
+      var labels = ['DÉPART', 'ARRIVÉE'], k = 0;
       wrap._animTimer = setInterval(function() {
-        if (!document.body.contains(img)) { exAnimStop(wrap); return; }
-        k = 1 - k; img.src = frames[k]; tag.textContent = labels[k];
+        if (!document.body.contains(box)) { exAnimStop(wrap); return; }
+        k = 1 - k; box.classList.toggle('alt', k === 1); tag.textContent = labels[k];
       }, 1100);
     }).catch(function(){ /* pas de 2e photo : on garde l'image fixe */ });
   }).catch(function() {
     if (wrap._animToken !== token) return;
+    wrap.style.minHeight = '';
     if (onFail) onFail();
   });
 }
@@ -10335,7 +10343,10 @@ var RZ_MEMBER_KEY = 'rize_member_v1';      // fiche membre en cache (pour le hor
 var RZ_SKIP_RE    = /^(rest-timer-v1|session-chrono-v1)$/;   // propres à chaque téléphone
 
 var RZ = { sb: null, session: null, member: null, pushTimer: null, busy: false,
-           lastSyncAt: 0, lastError: '', pendingRefresh: false, started: false };
+           lastSyncAt: 0, lastError: '', pendingRefresh: false, started: false, lastTouch: 0 };
+['touchstart', 'pointerdown', 'scroll', 'keydown'].forEach(function(ev) {
+  window.addEventListener(ev, function() { RZ.lastTouch = Date.now(); }, { passive: true, capture: true });
+});
 
 var _rzSet = Storage.prototype.setItem;
 var _rzRem = Storage.prototype.removeItem;
@@ -10511,6 +10522,10 @@ function rzSyncNow() {
 /* Rafraîchir l'écran quand des données arrivent (jamais au milieu d'une action) */
 function rzOverlayOpen() {
   if (document.querySelector('[id$="-modal"].show, [id$="-overlay"].show, #rz-admin.show, #rz-auth.show, #rzm-panel.show')) return true;
+  // Mode remplacement / ajout d'exercice en cours
+  if (document.querySelector('#lib-replace-banner.show, #lib-add-banner.show')) return true;
+  // L'utilisateur vient de toucher ou de faire défiler l'écran : on attend qu'il ait fini
+  if (Date.now() - (RZ.lastTouch || 0) < 8000) return true;
   var a = document.activeElement;
   return !!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT'));
 }
