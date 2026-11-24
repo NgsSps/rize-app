@@ -2630,6 +2630,12 @@ body.modal-open #nav { display:none !important; }
 .rz-st-who{font-size:13px;color:var(--wht)}
 .rz-st-state{font-size:11px;color:var(--dim);margin-top:3px}
 #rz-admin-btn{border-color:rgba(255,179,0,.5)!important;color:#FFB300!important}
+.rz-help{font-size:11px;color:var(--dim,#777);line-height:1.45;margin:14px 0 4px}
+.rz-card{background:var(--s2,#151515);border:1px solid var(--s4,#222);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.rz-card-top{display:flex;align-items:center;gap:10px}
+.rz-card-bot{display:flex;gap:8px;margin-top:8px}
+.rz-inv{margin:0!important;padding:9px 11px!important;font-size:14px!important;flex:1;min-width:0}
+.rz-save{min-width:58px}
 </style>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#080808">
@@ -2746,17 +2752,9 @@ body.modal-open #nav { display:none !important; }
       <span class="rz-link" onclick="rzForgot()">Mot de passe oubli&#xE9; ?</span>
     </div>
 
-    <div id="rz-v-choose" style="display:none">
-      <div class="rz-title">BIENVENUE !</div>
-      <div class="rz-text">Quel profil est le tien ?<br>Mathieu validera ta demande.</div>
-      <div class="profile-cards" id="rz-choose-cards"></div>
-      <div class="rz-msg" id="rz-msg-choose"></div>
-      <span class="rz-link" onclick="rzSignOut()">Se d&#xE9;connecter</span>
-    </div>
-
     <div id="rz-v-wait" style="display:none">
-      <div class="rz-title">DEMANDE ENVOY&#xC9;E</div>
-      <div class="rz-text">Profil demand&#xE9; : <b id="rz-wait-profile"></b><br>Mathieu doit valider ton compte.<br>Reviens ici ensuite et appuie sur Actualiser.</div>
+      <div class="rz-title">COMPTE PAS ENCORE RELI&#xC9;</div>
+      <div class="rz-text">Ton compte <b id="rz-wait-email"></b> n&#x2019;est reli&#xE9; &#xE0; aucun profil.<br>Demande &#xE0; Mathieu d&#x2019;ajouter ton email dans l&#x2019;app,<br>puis appuie sur Actualiser.</div>
       <div class="rz-msg" id="rz-msg-wait"></div>
       <button class="rz-btn" onclick="rzRefreshMember()">ACTUALISER</button>
       <span class="rz-link" onclick="rzSignOut()">Se d&#xE9;connecter</span>
@@ -10347,6 +10345,7 @@ function rzPush() {
   }).catch(function(e) {
     RZ.lastError = (e && e.message) || 'erreur réseau';
     rzStatusUpdate();
+    if (/row-level security|42501/i.test(RZ.lastError)) rzLoadMember().then(rzRoute, function() {});
   });
 }
 
@@ -10468,27 +10467,16 @@ function rzEl(id) { return document.getElementById(id); }
 function rzShowAuth(view, msg) {
   var o = rzEl('rz-auth'); if (!o) return;
   o.classList.add('show');
-  ['login', 'choose', 'wait', 'recovery', 'loading'].forEach(function(v) {
+  ['login', 'wait', 'recovery', 'loading'].forEach(function(v) {
     var e = rzEl('rz-v-' + v); if (e) e.style.display = (v === view) ? 'block' : 'none';
   });
   var m = rzEl('rz-msg-' + view); if (m) { m.textContent = msg || ''; m.className = 'rz-msg' + (msg && /✓/.test(msg) ? ' ok' : ''); }
-  if (view === 'wait' && RZ.member) {
-    var rp = RZ.member.requested_profile;
-    rzEl('rz-wait-profile').textContent = rp ? PROFILE_CONFIG[rp].name : '';
+  if (view === 'wait') {
+    var em = (RZ.member && RZ.member.email) || (RZ.session && RZ.session.user && RZ.session.user.email) || '';
+    var w = rzEl('rz-wait-email'); if (w) w.textContent = em;
   }
-  if (view === 'choose') rzRenderChoose();
 }
 function rzHideAuth() { var o = rzEl('rz-auth'); if (o) o.classList.remove('show'); }
-
-function rzRenderChoose() {
-  var box = rzEl('rz-choose-cards'); if (!box) return;
-  box.innerHTML = rzProfiles().map(function(p) {
-    var c = PROFILE_CONFIG[p];
-    return '<div class="profile-card" onclick="rzRequestProfile(\'' + p + '\')">'
-      + '<div class="profile-avatar" style="background:' + c.color + '">' + c.initial + '</div>'
-      + '<div class="profile-name">' + c.name + '</div></div>';
-  }).join('');
-}
 
 function rzLoadMember() {
   if (!RZ.sb || !RZ.session) return Promise.resolve(null);
@@ -10507,10 +10495,7 @@ function rzRoute() {
   var m = RZ.member;
   if (!RZ.session) { rzShowAuth('login'); return; }
   if (!m) { rzShowAuth('wait', 'Compte en cours de création… appuie sur Actualiser.'); return; }
-  if (!m.profile_id && !m.is_admin) {
-    if (m.requested_profile) rzShowAuth('wait'); else rzShowAuth('choose');
-    return;
-  }
+  if (!m.profile_id && !m.is_admin) { rzShowAuth('wait'); return; }
   rzHideAuth();
   rzApplyProfileFilter();
   try { RZ.sb.rpc('touch_last_seen').then(function(){}, function(){}); } catch(e) {}
@@ -10545,7 +10530,7 @@ function rzErrFr(e) {
   if (/Password should be at least|password.*(6|characters)/i.test(m)) return 'Mot de passe trop court (6 caractères minimum).';
   if (/rate limit|too many/i.test(m)) return 'Trop d’essais, attends quelques minutes.';
   if (/Failed to fetch|NetworkError|network|Load failed|fetch/i.test(m)) return 'Pas de connexion au serveur';
-  if (/profil déjà pris/i.test(m)) return 'Ce profil est déjà pris par un autre compte.';
+  if (/row-level security|42501/i.test(m)) return 'Accès refusé pour ce profil.';
   return m;
 }
 
@@ -10588,12 +10573,6 @@ function rzSetNewPassword() {
     if (res.error) { rzShowAuth('recovery', rzErrFr(res.error)); return; }
     showToast('✓ Mot de passe modifié', 'rgba(0,200,83,.9)');
     rzLoadMember().then(rzRoute);
-  });
-}
-function rzRequestProfile(p) {
-  RZ.sb.rpc('request_profile', { p: p }).then(function(res) {
-    if (res.error) { rzShowAuth('choose', rzErrFr(res.error)); return; }
-    return rzLoadMember().then(rzRoute);
   });
 }
 function rzRefreshMember() {
@@ -10652,61 +10631,110 @@ function rzStatusUpdate() {
 }
 
 /* ── 7. Panneau admin ──────────────────────────────────────────── */
+function rzEsc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function rzFmtAgo(d) {
+  if (!d) return '—';
+  var dt = new Date(d), diff = (Date.now() - dt) / 60000;
+  if (diff < 2) return 'à l’instant';
+  if (diff < 60) return 'il y a ' + Math.round(diff) + ' min';
+  if (diff < 1440) return 'il y a ' + Math.round(diff / 60) + ' h';
+  return dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+var RZ_ADMIN = { members: [], invites: {} };
+
 function rzOpenAdmin() {
   var o = rzEl('rz-admin'); if (!o || !RZ.member || !RZ.member.is_admin) return;
   o.classList.add('show');
-  rzEl('rz-admin-body').innerHTML = '<div class="rz-dim">Chargement…</div>';
+  rzEl('rz-admin-body').innerHTML = '<div class="rz-dim" style="padding:14px 0">Chargement…</div>';
   Promise.all([
-    RZ.sb.from('members').select('user_id,email,profile_id,requested_profile,is_admin,last_seen_at').order('created_at'),
+    RZ.sb.from('members').select('user_id,email,profile_id,is_admin,last_seen_at').order('created_at'),
+    RZ.sb.from('invites').select('profile_id,email'),
     RZ.sb.from('profile_data').select('profile_id,updated_at').order('updated_at', { ascending: false }).limit(1000)
   ]).then(function(r) {
     if (r[0].error) throw r[0].error;
-    var members = r[0].data || [], last = {};
-    (r[1].data || []).forEach(function(x) { if (!last[x.profile_id]) last[x.profile_id] = x.updated_at; });
-    var fmt = function(d) {
-      if (!d) return '—';
-      var dt = new Date(d), diff = (Date.now() - dt) / 60000;
-      if (diff < 2) return 'à l’instant';
-      if (diff < 60) return 'il y a ' + Math.round(diff) + ' min';
-      if (diff < 1440) return 'il y a ' + Math.round(diff / 60) + ' h';
-      return dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-    };
-    var html = '';
-    var pend = members.filter(function(m) { return !m.profile_id && !m.is_admin; });
-    html += '<div class="rz-sec">COMPTES EN ATTENTE</div>';
-    if (!pend.length) html += '<div class="rz-dim">Aucun</div>';
-    pend.forEach(function(m) {
-      var opts = rzProfiles().map(function(p) {
-        return '<option value="' + p + '"' + (m.requested_profile === p ? ' selected' : '') + '>' + PROFILE_CONFIG[p].name + '</option>';
-      }).join('');
-      html += '<div class="rz-row"><div class="rz-row-main"><div class="rz-email">' + m.email + '</div>'
-        + '<div class="rz-dim">demande : ' + (m.requested_profile ? PROFILE_CONFIG[m.requested_profile].name : 'pas encore choisi') + '</div></div>'
-        + '<select id="rz-sel-' + m.user_id + '" class="rz-select">' + opts + '</select>'
-        + '<button class="rz-mini" onclick="rzAdminAssign(\'' + m.user_id + '\')">VALIDER</button></div>';
-    });
+    if (r[1].error) throw r[1].error;
+    var members = r[0].data || [], invites = {}, last = {};
+    (r[1].data || []).forEach(function(x) { invites[x.profile_id] = x.email; });
+    (r[2].data || []).forEach(function(x) { if (!last[x.profile_id]) last[x.profile_id] = x.updated_at; });
+    RZ_ADMIN.members = members; RZ_ADMIN.invites = invites;
+
+    var html = '<div class="rz-help">Mets l’email de chaque personne : quand elle crée son compte avec cet email, elle arrive directement dans son profil. Un email absent de cette liste n’a accès à rien.</div>';
     html += '<div class="rz-sec">PROFILS</div>';
     rzProfiles().forEach(function(p) {
       var c = PROFILE_CONFIG[p];
       var acc = members.filter(function(m) { return m.profile_id === p; })[0];
-      html += '<div class="rz-row"><div class="profile-avatar rz-av" style="background:' + c.color + '">' + c.initial + '</div>'
+      var st;
+      if (p === 'mathieu') st = '👑 toi (admin) · ' + rzEsc(RZ.member.email);
+      else if (acc) st = '✓ compte actif · vu ' + rzFmtAgo(acc.last_seen_at);
+      else if (invites[p]) st = '⏳ en attente de son inscription';
+      else st = 'aucun email → personne n’y a accès';
+      html += '<div class="rz-card" id="rz-card-' + p + '">'
+        + '<div class="rz-card-top"><div class="profile-avatar rz-av" style="background:' + c.color + '">' + c.initial + '</div>'
         + '<div class="rz-row-main"><div class="rz-email">' + c.name + '</div>'
-        + '<div class="rz-dim">' + (acc ? acc.email + ' · vu ' + fmt(acc.last_seen_at) : 'aucun compte') + '</div>'
-        + '<div class="rz-dim">Dernière donnée reçue : ' + fmt(last[p]) + '</div></div>'
+        + '<div class="rz-dim">' + st + '</div>'
+        + '<div class="rz-dim">Dernière donnée reçue : ' + rzFmtAgo(last[p]) + '</div></div>'
         + '<button class="rz-mini" onclick="rzAdminOpenProfile(\'' + p + '\')">OUVRIR</button></div>';
+      if (p !== 'mathieu') {
+        html += '<div class="rz-card-bot"><input class="rz-input rz-inv" id="rz-inv-' + p + '" type="email" inputmode="email" autocomplete="off" placeholder="email de ' + rzEsc(c.name) + '" value="' + rzEsc(invites[p] || '') + '">'
+          + '<button class="rz-mini rz-save" id="rz-invbtn-' + p + '" onclick="rzAdminSaveInvite(\'' + p + '\')">OK</button></div>';
+      }
+      html += '</div>';
     });
+
+    var loose = members.filter(function(m) { return !m.profile_id && !m.is_admin; });
+    if (loose.length) {
+      html += '<div class="rz-sec">COMPTES SANS PROFIL</div>';
+      html += '<div class="rz-help">Ces comptes ont été créés avec un email que tu n’as pas ajouté. Relie-les à un profil si c’est bien la bonne personne.</div>';
+      loose.forEach(function(m) {
+        var opts = rzProfiles().filter(function(p) { return p !== 'mathieu'; }).map(function(p) {
+          return '<option value="' + p + '">' + PROFILE_CONFIG[p].name + '</option>';
+        }).join('');
+        html += '<div class="rz-row"><div class="rz-row-main"><div class="rz-email">' + rzEsc(m.email) + '</div>'
+          + '<div class="rz-dim">créé, vu ' + rzFmtAgo(m.last_seen_at) + '</div></div>'
+          + '<select id="rz-sel-' + m.user_id + '" class="rz-select">' + opts + '</select>'
+          + '<button class="rz-mini" onclick="rzAdminLink(\'' + m.user_id + '\')">RELIER</button></div>';
+      });
+    }
     rzEl('rz-admin-body').innerHTML = html;
   }).catch(function(e) {
-    rzEl('rz-admin-body').innerHTML = '<div class="rz-msg">' + rzErrFr(e) + '</div>';
+    rzEl('rz-admin-body').innerHTML = '<div class="rz-msg">' + rzEsc(rzErrFr(e)) + '</div>';
   });
 }
 function rzCloseAdmin() { var o = rzEl('rz-admin'); if (o) o.classList.remove('show'); }
-function rzAdminAssign(uid) {
-  var sel = rzEl('rz-sel-' + uid); if (!sel) return;
-  RZ.sb.rpc('admin_assign', { target: uid, p: sel.value }).then(function(res) {
-    if (res.error) { showToast(rzErrFr(res.error), 'rgba(229,57,53,.9)'); return; }
-    showToast('✓ Compte validé : ' + PROFILE_CONFIG[sel.value].name, 'rgba(0,200,83,.9)');
+
+function rzAdminSetInvite(p, email, okMsg) {
+  return RZ.sb.rpc('admin_set_invite', { p: p, e: email }).then(function(res) {
+    if (res.error) { showToast(rzErrFr(res.error), 'rgba(229,57,53,.9)'); return false; }
+    showToast(okMsg, 'rgba(0,200,83,.9)');
     rzOpenAdmin();
+    return true;
   });
+}
+function rzAdminSaveInvite(p) {
+  var inp = rzEl('rz-inv-' + p), btn = rzEl('rz-invbtn-' + p);
+  if (!inp || !btn) return;
+  var email = (inp.value || '').trim().toLowerCase();
+  var name = PROFILE_CONFIG[p].name;
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Email invalide', 'rgba(229,57,53,.9)'); return; }
+  var acc = RZ_ADMIN.members.filter(function(m) { return m.profile_id === p; })[0];
+  // Changer/retirer l'email d'un profil déjà utilisé coupe l'accès de ce compte → on demande de confirmer
+  if (acc && acc.email !== email && btn.dataset.confirm !== '1') {
+    btn.dataset.confirm = '1'; btn.textContent = 'SÛR ?';
+    showToast((email ? 'Le compte ' : 'Retirer l’accès de ') + acc.email + (email ? ' perdra l’accès à ' + name : ' à ' + name) + ' : appuie sur SÛR ? pour confirmer', 'rgba(255,179,0,.9)');
+    setTimeout(function() { if (btn) { btn.dataset.confirm = ''; btn.textContent = 'OK'; } }, 5000);
+    return;
+  }
+  rzAdminSetInvite(p, email, email ? '✓ ' + name + ' : ' + email : '✓ Accès retiré pour ' + name);
+}
+function rzAdminLink(uid) {
+  var sel = rzEl('rz-sel-' + uid); if (!sel) return;
+  var m = RZ_ADMIN.members.filter(function(x) { return x.user_id === uid; })[0]; if (!m) return;
+  var p = sel.value;
+  if (RZ_ADMIN.invites[p] && RZ_ADMIN.invites[p] !== m.email) {
+    var acc = RZ_ADMIN.members.filter(function(x) { return x.profile_id === p; })[0];
+    if (acc) { showToast(PROFILE_CONFIG[p].name + ' a déjà un compte : vide d’abord son email', 'rgba(229,57,53,.9)'); return; }
+  }
+  rzAdminSetInvite(p, m.email, '✓ ' + m.email + ' relié à ' + PROFILE_CONFIG[p].name);
 }
 function rzAdminOpenProfile(p) {
   rzCloseAdmin();
