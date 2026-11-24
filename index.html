@@ -2640,6 +2640,50 @@ body.modal-open #nav { display:none !important; }
 .rz-inv-msg:empty{display:none}
 .rz-inv-msg.ok{color:#00C853}
 .rz-inv-msg.err{color:#FF5252}
+
+/* ══ RIZE MESSAGES ══ */
+.rzm-bell{position:relative;font-size:20px;cursor:pointer;padding:4px 6px;line-height:1;user-select:none;-webkit-user-select:none}
+.rzm-bell-n{position:absolute;top:-2px;right:-4px;min-width:17px;height:17px;border-radius:9px;background:#E53935;color:#fff;
+  font-family:'Bebas Neue',sans-serif;font-size:11px;line-height:17px;text-align:center;padding:0 4px;box-sizing:border-box}
+.rzm-cbtn{background:none;border:none;font-size:14px;cursor:pointer;padding:2px 2px 2px 6px;flex-shrink:0;line-height:1;
+  position:relative;opacity:.35;filter:grayscale(1)}
+.rzm-cbtn.has{opacity:.9;filter:none}
+.rzm-cbtn.unread::after{content:'';position:absolute;top:0;right:-2px;width:8px;height:8px;border-radius:50%;background:#E53935}
+.record-item .rzm-cbtn{margin-left:8px}
+#rzm-panel{position:fixed;inset:0;z-index:10045;background:rgba(0,0,0,.75);display:none;align-items:flex-end;justify-content:center}
+#rzm-panel.show{display:flex}
+.rzm-sheet{width:100%;max-width:520px;height:86vh;display:flex;flex-direction:column;background:var(--s1,#0f0f0f);
+  border-top:1px solid #2979FF;border-radius:18px 18px 0 0;overflow:hidden}
+.rzm-title{display:flex;align-items:center;justify-content:space-between;font-family:'Bebas Neue',sans-serif;font-size:20px;
+  color:#2979FF;letter-spacing:1px;padding:14px 16px 8px}
+.rzm-x{font-size:13px;color:var(--dim,#777);cursor:pointer;letter-spacing:1.5px;padding:4px 8px}
+#rzm-head{padding:0 16px 8px;border-bottom:1px solid var(--s4,#222)}
+.rzm-sub{font-size:12px;color:var(--dim,#777)}
+.rzm-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.rzm-tab{flex-shrink:0;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;padding:6px 10px;border-radius:8px;
+  border:1px solid #333;color:#aaa;cursor:pointer}
+.rzm-tab-n{display:inline-block;min-width:16px;border-radius:8px;background:#E53935;color:#fff;font-size:10px;text-align:center;padding:0 4px;margin-left:2px}
+.rzm-ref{margin-top:8px;font-size:12px;color:#fff;background:rgba(41,121,255,.12);border:1px solid rgba(41,121,255,.35);border-radius:8px;padding:7px 10px;
+  display:flex;justify-content:space-between;gap:8px;align-items:center}
+.rzm-ref-x{color:#2979FF;cursor:pointer;white-space:nowrap;font-size:11px}
+#rzm-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.rzm-empty{color:var(--dim,#777);font-size:12px;text-align:center;margin-top:30px}
+.rzm-msg{max-width:84%;align-self:flex-start;background:var(--s2,#151515);border:1px solid var(--s4,#222);border-radius:12px 12px 12px 4px;padding:8px 11px}
+.rzm-msg.mine{align-self:flex-end;background:rgba(0,200,83,.10);border-color:rgba(0,200,83,.3);border-radius:12px 12px 4px 12px}
+.rzm-msg.coach:not(.mine){border-color:rgba(255,179,0,.45)}
+.rzm-ctx{font-size:10px;color:#2979FF;margin-bottom:4px;cursor:pointer}
+.rzm-txt{font-size:14px;color:#fff;line-height:1.4;word-wrap:break-word;overflow-wrap:anywhere}
+.rzm-meta{font-size:10px;color:var(--dim,#777);margin-top:4px}
+.rzm-del{color:#FF5252;cursor:pointer;margin-left:4px}
+.rzm-compose{border-top:1px solid var(--s4,#222);padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.rzm-row{display:flex;gap:8px;align-items:flex-end}
+#rzm-input{flex:1;min-height:42px;max-height:120px;resize:none;background:#111;border:1px solid #2a2a2a;border-radius:10px;color:#fff;
+  font-size:16px;padding:10px 12px;outline:none;font-family:inherit}
+#rzm-input:focus{border-color:#2979FF}
+#rzm-send{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;border:none;border-radius:10px;padding:12px 14px;background:#2979FF;color:#fff;cursor:pointer}
+#rzm-send:disabled{opacity:.6}
+#rzm-err{font-size:11px;color:#FF5252;min-height:0;margin-top:4px}
+#rzm-err:empty{display:none}
 </style>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#080808">
@@ -2769,6 +2813,22 @@ body.modal-open #nav { display:none !important; }
       <input class="rz-input" id="rz-newpass" type="password" autocomplete="new-password" placeholder="Nouveau mot de passe">
       <div class="rz-msg" id="rz-msg-recovery"></div>
       <button class="rz-btn" onclick="rzSetNewPassword()">ENREGISTRER</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RIZE MESSAGES ══ -->
+<div id="rzm-panel" onclick="if(event.target===this)rzmClose()">
+  <div class="rzm-sheet">
+    <div class="rzm-title">&#x1F4AC; MESSAGES <span class="rzm-x" onclick="rzmClose()">FERMER &#x2715;</span></div>
+    <div id="rzm-head"></div>
+    <div id="rzm-body"></div>
+    <div class="rzm-compose">
+      <div class="rzm-row">
+        <textarea id="rzm-input" rows="1" maxlength="2000" placeholder="Ton message&#x2026;"></textarea>
+        <button id="rzm-send" onclick="rzmSend()">ENVOYER</button>
+      </div>
+      <div id="rzm-err"></div>
     </div>
   </div>
 </div>
@@ -10450,7 +10510,7 @@ function rzSyncNow() {
 
 /* Rafraîchir l'écran quand des données arrivent (jamais au milieu d'une action) */
 function rzOverlayOpen() {
-  if (document.querySelector('[id$="-modal"].show, [id$="-overlay"].show, #rz-admin.show, #rz-auth.show')) return true;
+  if (document.querySelector('[id$="-modal"].show, [id$="-overlay"].show, #rz-admin.show, #rz-auth.show, #rzm-panel.show')) return true;
   var a = document.activeElement;
   return !!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT'));
 }
@@ -10820,6 +10880,300 @@ function rzStart() {
   setInterval(function() { if (RZ.pendingRefresh && !rzOverlayOpen()) rzRefreshUI(); }, 3000);
 }
 rzStart();
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   RIZE MESSAGES — commentaires entre Mathieu (admin) et chaque profil
+   - 🔔 avec compteur de messages non lus (à côté du nom du profil)
+   - 💬 sur chaque exercice et chaque record (point rouge si non lu)
+   - Fil de discussion par profil, réponse possible
+══════════════════════════════════════════════════════════════════ */
+var RZM = { list: [], loaded: false, seen: {}, readIds: {}, firstToastDone: false,
+            open: false, profile: null, ref: null, context: null, sending: false };
+
+function rzmMyUid() { return RZ.session && RZ.session.user ? RZ.session.user.id : null; }
+function rzmIsAdmin() { return !!(RZ.member && RZ.member.is_admin); }
+function rzmAuthorName(c) {
+  if (c.is_admin_author) return 'Mathieu';
+  return (c.author_profile && PROFILE_CONFIG[c.author_profile]) ? PROFILE_CONFIG[c.author_profile].name : '?';
+}
+function rzmUnread(p, ref) {
+  var me = rzmMyUid();
+  return RZM.list.filter(function(c) {
+    return !c.read_at && c.author !== me && (!p || c.profile_id === p) && (!ref || c.ref === ref);
+  });
+}
+/* Fil concerné par la cloche */
+function rzmBellProfile() {
+  if (!rzmIsAdmin()) return RZ.member ? RZ.member.profile_id : null;
+  return null; // admin : tous les fils
+}
+
+/* ── Chargement ─────────────────────────────────────────────────── */
+function rzmLoad() {
+  if (!RZ.sb || !RZ.session || !RZ.member) return Promise.resolve();
+  if (!RZ.member.is_admin && !RZ.member.profile_id) return Promise.resolve();
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return Promise.resolve();
+  return RZ.sb.from('comments')
+    .select('id,profile_id,author,author_profile,is_admin_author,ref,context,body,created_at,read_at')
+    .order('created_at', { ascending: false }).limit(500)
+    .then(function(res) {
+      if (res.error) throw res.error;
+      var list = (res.data || []).slice().reverse();
+      var me = rzmMyUid();
+      // Lu sur ce téléphone mais pas encore confirmé par le serveur → on le garde comme lu
+      list.forEach(function(c) { if (!c.read_at && RZM.readIds[c.id]) c.read_at = RZM.readIds[c.id]; });
+      var fresh = list.filter(function(c) { return !c.read_at && c.author !== me && !RZM.seen[c.id]; });
+      list.forEach(function(c) { RZM.seen[c.id] = 1; });
+      RZM.list = list;
+      var firstLoad = !RZM.loaded;
+      RZM.loaded = true;
+      rzmUpdateBadges();
+      if (RZM.open) rzmRenderPanel();
+      // Notification dans l'app
+      var unread = rzmUnread(rzmBellProfile());
+      if (firstLoad && unread.length && !RZM.firstToastDone) {
+        RZM.firstToastDone = true;
+        showToast('💬 ' + unread.length + ' nouveau' + (unread.length > 1 ? 'x' : '') + ' message' + (unread.length > 1 ? 's' : '') + ' — touche la 🔔', 'rgba(41,121,255,.95)');
+        try { vibrate([40, 60, 40]); } catch(e) {}
+      } else if (!firstLoad && fresh.length && !RZM.open) {
+        var last = fresh[fresh.length - 1];
+        showToast('💬 ' + rzmAuthorName(last) + ' : ' + (last.body.length > 40 ? last.body.slice(0, 40) + '…' : last.body), 'rgba(41,121,255,.95)');
+        try { vibrate([40, 60, 40]); } catch(e) {}
+      }
+    }).catch(function() {});
+}
+
+/* ── Cloche + pastilles ─────────────────────────────────────────── */
+function rzmUpdateBadges() {
+  var n = RZ.member ? rzmUnread(rzmBellProfile()).length : 0;
+  var b = document.getElementById('rzm-bell');
+  if (b) {
+    b.style.display = (RZ.session && RZ.member) ? '' : 'none';
+    var s = b.querySelector('.rzm-bell-n');
+    if (s) { s.textContent = n > 9 ? '9+' : String(n); s.style.display = n ? '' : 'none'; }
+  }
+  rzmAddCardButtons();
+  document.querySelectorAll('.rzm-cbtn').forEach(function(btn) {
+    var ref = btn.dataset.ref, p = CURRENT_PROFILE;
+    var all = RZM.list.filter(function(c) { return c.profile_id === p && c.ref === ref; }).length;
+    var un = rzmUnread(p, ref).length;
+    btn.classList.toggle('has', all > 0);
+    btn.classList.toggle('unread', un > 0);
+  });
+}
+function rzmBellHTML() {
+  return '<div id="rzm-bell" class="rzm-bell" onclick="event.stopPropagation();rzmOpen()" title="Messages">'
+    + '🔔<span class="rzm-bell-n" style="display:none">0</span></div>';
+}
+function rzmCardRef(card) {
+  var n = card.querySelector('.ex-name');
+  return 'ex:' + (card.dataset.group || '') + '||' + (n ? n.textContent.trim() : '');
+}
+function rzmGroupLabel(g) {
+  return { jambes: 'Jambes', back: 'Back', bras: 'Bras & Pecs', libre: 'Séance libre' }[g] || g || '';
+}
+function rzmAddCardButtons() {
+  if (!RZ.session || !RZ.member) return;
+  document.querySelectorAll('.card').forEach(function(card) {
+    var header = card.querySelector('.card-header');
+    var name = card.querySelector('.ex-name');
+    if (!header || !name) return;
+    var btn = header.querySelector('.rzm-cbtn');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.className = 'rzm-cbtn';
+      btn.title = 'Commentaires';
+      btn.innerHTML = '💬';
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var nm = card.querySelector('.ex-name').textContent.trim();
+        rzmOpen(CURRENT_PROFILE, rzmCardRef(card), nm + ' · ' + rzmGroupLabel(card.dataset.group));
+      });
+      var cb = header.querySelector('.cb');
+      header.insertBefore(btn, cb);
+    }
+    btn.dataset.ref = rzmCardRef(card);   // le nom peut changer (remplacement d'exercice)
+  });
+}
+
+/* ── Panneau ────────────────────────────────────────────────────── */
+function rzmOpen(p, ref, context) {
+  if (!RZ.session || !RZ.member) { showToast('Connecte-toi à ton compte pour les messages', 'rgba(229,57,53,.9)'); return; }
+  if (!rzmIsAdmin()) p = RZ.member.profile_id;
+  else if (!p || p === 'mathieu') {
+    // admin depuis son profil : le fil avec des non-lus, sinon le profil ouvert, sinon le premier
+    var un = rzmUnread(null);
+    p = un.length ? un[un.length - 1].profile_id : (CURRENT_PROFILE && CURRENT_PROFILE !== 'mathieu' ? CURRENT_PROFILE : rzProfiles().filter(function(x) { return x !== 'mathieu'; })[0]);
+  }
+  RZM.profile = p; RZM.ref = ref || null; RZM.context = context || null;
+  RZM.open = true;
+  document.getElementById('rzm-panel').classList.add('show');
+  rzmRenderPanel();
+  rzmMarkRead();
+  rzmLoad();
+}
+function rzmClose() {
+  RZM.open = false;
+  document.getElementById('rzm-panel').classList.remove('show');
+  rzmUpdateBadges();
+}
+function rzmSwitch(p) { RZM.profile = p; RZM.ref = null; RZM.context = null; rzmRenderPanel(); rzmMarkRead(); }
+function rzmClearRef() { RZM.ref = null; RZM.context = null; rzmRenderPanel(); rzmMarkRead(); }
+
+function rzmMarkRead() {
+  var p = RZM.profile, ref = RZM.ref;
+  var un = rzmUnread(p, ref);
+  if (!un.length) return;
+  var now = new Date().toISOString();
+  un.forEach(function(c) { c.read_at = now; RZM.readIds[c.id] = now; });   // affichage immédiat
+  rzmUpdateBadges();
+  RZ.sb.rpc('mark_comments_read', ref ? { p: p, r: ref } : { p: p }).then(function() {}, function() {});
+}
+
+function rzmFmtDate(d) {
+  var dt = new Date(d); if (isNaN(dt)) return '';
+  var today = new Date();
+  var hm = dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  if (dt.toDateString() === today.toDateString()) return hm;
+  return dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' ' + hm;
+}
+
+function rzmRenderPanel() {
+  var p = RZM.profile;
+  var body = document.getElementById('rzm-body');
+  var head = document.getElementById('rzm-head');
+  if (!body || !head || !p) return;
+  var me = rzmMyUid();
+  // En-tête : onglets des profils pour l'admin
+  var h = '';
+  if (rzmIsAdmin()) {
+    h += '<div class="rzm-tabs">' + rzProfiles().filter(function(x) { return x !== 'mathieu'; }).map(function(x) {
+      var n = rzmUnread(x).length, c = PROFILE_CONFIG[x];
+      return '<div class="rzm-tab' + (x === p ? ' on' : '') + '" style="' + (x === p ? 'border-color:' + c.color + ';color:' + c.color : '') + '" onclick="rzmSwitch(\'' + x + '\')">'
+        + rzEsc(c.name) + (n ? ' <span class="rzm-tab-n">' + n + '</span>' : '') + '</div>';
+    }).join('') + '</div>';
+  } else {
+    h += '<div class="rzm-sub">Tes échanges avec Mathieu</div>';
+  }
+  if (RZM.ref) {
+    h += '<div class="rzm-ref">📌 ' + rzEsc(RZM.context || '') + '<span class="rzm-ref-x" onclick="rzmClearRef()">tout voir ✕</span></div>';
+  }
+  head.innerHTML = h;
+
+  var msgs = RZM.list.filter(function(c) { return c.profile_id === p && (!RZM.ref || c.ref === RZM.ref); });
+  if (!msgs.length) {
+    body.innerHTML = '<div class="rzm-empty">' + (RZM.ref ? 'Aucun commentaire sur cet élément pour l’instant.' : 'Aucun message pour l’instant.') + '</div>';
+  } else {
+    body.innerHTML = msgs.map(function(c) {
+      var mine = c.author === me;
+      var canDel = mine || rzmIsAdmin();
+      return '<div class="rzm-msg' + (mine ? ' mine' : '') + (c.is_admin_author ? ' coach' : '') + '">'
+        + (c.context && !RZM.ref ? '<div class="rzm-ctx" data-p="' + rzEsc(c.profile_id) + '" data-ref="' + rzEsc(c.ref || '') + '" data-ctx="' + rzEsc(c.context) + '" onclick="rzmOpenFromEl(this)">📌 ' + rzEsc(c.context) + '</div>' : '')
+        + '<div class="rzm-txt">' + rzEsc(c.body).replace(/\n/g, '<br>') + '</div>'
+        + '<div class="rzm-meta">' + (c.is_admin_author ? '👑 ' : '') + rzEsc(rzmAuthorName(c)) + ' · ' + rzmFmtDate(c.created_at)
+        + (mine && c.read_at ? ' · vu ✓' : '')
+        + (canDel ? ' <span class="rzm-del" onclick="rzmDelete(\'' + c.id + '\', this)">supprimer</span>' : '') + '</div>'
+        + '</div>';
+    }).join('');
+  }
+  var ta = document.getElementById('rzm-input');
+  if (ta) ta.placeholder = RZM.ref ? 'Ton commentaire sur ' + (RZM.context || 'cet élément') + '…'
+    : (rzmIsAdmin() ? 'Message pour ' + PROFILE_CONFIG[p].name + '…' : 'Ton message pour Mathieu…');
+  setTimeout(function() { body.scrollTop = body.scrollHeight; }, 30);
+}
+
+function rzmSend() {
+  var ta = document.getElementById('rzm-input'), btn = document.getElementById('rzm-send');
+  var txt = (ta.value || '').trim();
+  if (!txt || RZM.sending) return;
+  if (txt.length > 2000) { rzmErr('Message trop long (2000 caractères max).'); return; }
+  RZM.sending = true; btn.disabled = true; btn.textContent = '…';
+  var args = { p: RZM.profile, b: txt };
+  if (RZM.ref) { args.r = RZM.ref; args.c = RZM.context || ''; }
+  RZ.sb.rpc('post_comment', args).then(function(res) {
+    RZM.sending = false; btn.disabled = false; btn.textContent = 'ENVOYER';
+    if (res.error) { rzmErr(rzErrFr(res.error)); return; }
+    ta.value = ''; rzmErr('');
+    if (res.data && res.data.id) { RZM.list.push(res.data); RZM.seen[res.data.id] = 1; }
+    rzmRenderPanel(); rzmUpdateBadges();
+  }, function(e) {
+    RZM.sending = false; btn.disabled = false; btn.textContent = 'ENVOYER';
+    rzmErr(rzErrFr(e));
+  });
+}
+function rzmErr(t) { var e = document.getElementById('rzm-err'); if (e) e.textContent = t ? '⚠️ ' + t : ''; }
+
+function rzmOpenFromEl(el) { rzmOpen(el.dataset.p, el.dataset.ref || null, el.dataset.ctx || null); }
+function rzmDelete(id, el) {
+  if (el && el.dataset.confirm !== '1') {
+    el.dataset.confirm = '1'; el.textContent = 'sûr ?';
+    setTimeout(function() { if (el) { el.dataset.confirm = ''; el.textContent = 'supprimer'; } }, 4000);
+    return;
+  }
+  RZ.sb.rpc('delete_comment', { cid: id }).then(function(res) {
+    if (res.error) { rzmErr(rzErrFr(res.error)); return; }
+    RZM.list = RZM.list.filter(function(c) { return c.id !== id; });
+    rzmRenderPanel(); rzmUpdateBadges();
+  }, function(e) { rzmErr(rzErrFr(e)); });
+}
+
+/* ── Records : bouton 💬 sur chaque record ─────────────────────── */
+var _rzmOrigRenderRecords = renderRecords;
+renderRecords = function() {
+  _rzmOrigRenderRecords();
+  if (!RZ.session || !RZ.member) return;
+  var list = document.getElementById('records-list'); if (!list) return;
+  var records = recordsLoad();
+  var byName = {};
+  Object.keys(records).forEach(function(k) { byName[records[k].name + '|' + records[k].best] = k; });
+  list.querySelectorAll('.record-item').forEach(function(item) {
+    if (item.querySelector('.rzm-cbtn')) return;
+    var nm = (item.querySelector('.record-name') || {}).textContent || '';
+    var w = parseFloat((item.querySelector('.record-weight') || {}).textContent || '');
+    var key = byName[nm + '|' + w] || nm;
+    var ref = 'rec:' + key;
+    var btn = document.createElement('button');
+    btn.className = 'rzm-cbtn'; btn.dataset.ref = ref; btn.innerHTML = '💬';
+    btn.addEventListener('click', function(e) { e.stopPropagation(); rzmOpen(CURRENT_PROFILE, ref, 'Record ' + nm + ' — ' + w + ' kg'); });
+    item.appendChild(btn);
+  });
+  rzmUpdateBadges();
+};
+
+/* ── Branchements ───────────────────────────────────────────────── */
+var _rzmOrigRenderProfileBadge = renderProfileBadge;
+renderProfileBadge = function() {
+  _rzmOrigRenderProfileBadge();
+  var b = document.getElementById('active-profile-badge');
+  if (b && !document.getElementById('rzm-bell')) b.insertAdjacentHTML('beforeend', rzmBellHTML());
+  rzmUpdateBadges();
+};
+var _rzmOrigRoute = rzRoute;
+rzRoute = function() {
+  _rzmOrigRoute();
+  if (RZ.session && RZ.member && (RZ.member.is_admin || RZ.member.profile_id)) rzmLoad();
+};
+var _rzmOrigLoginSuccess = loginSuccess;
+loginSuccess = function(profileId) {
+  _rzmOrigLoginSuccess(profileId);
+  rzmUpdateBadges();
+  if (RZ.session && RZ.member) rzmLoad();
+};
+var _rzmOrigSignOut = rzSignOut;
+rzSignOut = function() {
+  RZM.list = []; RZM.loaded = false; RZM.seen = {}; RZM.readIds = {}; RZM.firstToastDone = false;
+  try { rzmClose(); } catch(e) {}
+  _rzmOrigSignOut();
+};
+setInterval(function() {
+  if (document.visibilityState === 'visible' && RZ.session && RZ.member) rzmLoad();
+}, 30000);
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible' && RZ.session && RZ.member) rzmLoad();
+});
+// Cas où la connexion s'est faite avant le chargement de ce module
+if (RZ.session && RZ.member) rzmLoad();
 
 </script>
 </body>
