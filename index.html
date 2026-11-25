@@ -2689,13 +2689,14 @@ body.modal-open #nav { display:none !important; }
 .rzm-cbtn.has{opacity:.9;filter:none}
 .rzm-cbtn.unread::after{content:'';position:absolute;top:0;right:-2px;width:8px;height:8px;border-radius:50%;background:#E53935}
 .record-item .rzm-cbtn{margin-left:8px}
-#rzm-panel{position:fixed;inset:0;z-index:10045;background:rgba(0,0,0,.75);display:none;align-items:flex-end;justify-content:center}
+#rzm-panel{position:fixed;inset:0;z-index:10045;background:rgba(0,0,0,.75);display:none;align-items:flex-end;justify-content:center;overscroll-behavior:contain}
 #rzm-panel.show{display:flex}
-.rzm-sheet{width:100%;max-width:520px;height:86vh;display:flex;flex-direction:column;background:var(--s1,#0f0f0f);
+body.rzm-open #scroll-area{overflow:hidden}
+.rzm-sheet{width:100%;max-width:520px;height:86%;max-height:100%;display:flex;flex-direction:column;background:var(--s1,#0f0f0f);
   border-top:1px solid #2979FF;border-radius:18px 18px 0 0;overflow:hidden}
 .rzm-title{display:flex;align-items:center;justify-content:space-between;font-family:'Bebas Neue',sans-serif;font-size:20px;
   color:#2979FF;letter-spacing:1px;padding:14px 16px 8px}
-.rzm-x{font-size:13px;color:var(--dim,#777);cursor:pointer;letter-spacing:1.5px;padding:4px 8px}
+.rzm-x{font-size:13px;color:var(--dim,#777);cursor:pointer;letter-spacing:1.5px;padding:12px 14px;margin:-10px -10px -10px 0}
 #rzm-head{padding:0 16px 8px;border-bottom:1px solid var(--s4,#222)}
 .rzm-sub{font-size:12px;color:var(--dim,#777)}
 .rzm-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
@@ -2705,7 +2706,7 @@ body.modal-open #nav { display:none !important; }
 .rzm-ref{margin-top:8px;font-size:12px;color:#fff;background:rgba(41,121,255,.12);border:1px solid rgba(41,121,255,.35);border-radius:8px;padding:7px 10px;
   display:flex;justify-content:space-between;gap:8px;align-items:center}
 .rzm-ref-x{color:#2979FF;cursor:pointer;white-space:nowrap;font-size:11px}
-#rzm-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+#rzm-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .rzm-empty{color:var(--dim,#777);font-size:12px;text-align:center;margin-top:30px}
 .rzm-msg{max-width:84%;align-self:flex-start;background:var(--s2,#151515);border:1px solid var(--s4,#222);border-radius:12px 12px 12px 4px;padding:8px 11px}
 .rzm-msg.mine{align-self:flex-end;background:rgba(0,200,83,.10);border-color:rgba(0,200,83,.3);border-radius:12px 12px 4px 12px}
@@ -2717,7 +2718,7 @@ body.modal-open #nav { display:none !important; }
 .rzm-compose{border-top:1px solid var(--s4,#222);padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom))}
 .rzm-row{display:flex;gap:8px;align-items:flex-end}
 #rzm-input{flex:1;min-height:42px;max-height:120px;resize:none;background:#111;border:1px solid #2a2a2a;border-radius:10px;color:#fff;
-  font-size:16px;padding:10px 12px;outline:none;font-family:inherit}
+  font-size:16px;padding:10px 12px;outline:none;font-family:inherit;overflow-y:auto}
 #rzm-input:focus{border-color:#2979FF}
 #rzm-send{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;border:none;border-radius:10px;padding:12px 14px;background:#2979FF;color:#fff;cursor:pointer}
 #rzm-send:disabled{opacity:.6}
@@ -11026,9 +11027,14 @@ function rzmBellHTML() {
   return '<div id="rzm-bell" class="rzm-bell" onclick="event.stopPropagation();rzmOpen()" title="Messages">'
     + '🔔<span class="rzm-bell-n" style="display:none">0</span></div>';
 }
+function rzmCardName(card) {          // nom de l'exo SANS le badge « ✦ BIBLIO » ajouté après un remplacement
+  var n = card.querySelector('.ex-name'); if (!n) return '';
+  var t = ''; n.childNodes.forEach(function(x) { if (x.nodeType === 3) t += x.nodeValue; });
+  t = t.trim();
+  return t || n.textContent.trim();
+}
 function rzmCardRef(card) {
-  var n = card.querySelector('.ex-name');
-  return 'ex:' + (card.dataset.group || '') + '||' + (n ? n.textContent.trim() : '');
+  return 'ex:' + (card.dataset.group || '') + '||' + rzmCardName(card);
 }
 function rzmGroupLabel(g) {
   return { jambes: 'Jambes', back: 'Back', bras: 'Bras & Pecs', libre: 'Séance libre' }[g] || g || '';
@@ -11047,7 +11053,7 @@ function rzmAddCardButtons() {
       btn.innerHTML = '💬';
       btn.addEventListener('click', function(e) {
         e.stopPropagation();
-        var nm = card.querySelector('.ex-name').textContent.trim();
+        var nm = rzmCardName(card);
         rzmOpen(CURRENT_PROFILE, rzmCardRef(card), nm + ' · ' + rzmGroupLabel(card.dataset.group));
       });
       var cb = header.querySelector('.cb');
@@ -11058,6 +11064,21 @@ function rzmAddCardButtons() {
 }
 
 /* ── Panneau ────────────────────────────────────────────────────── */
+/* Le panneau suit la zone réellement visible (clavier ouvert, barre Safari…) : champ + bouton ENVOYER restent à l'écran */
+function rzmFit() {
+  var p = document.getElementById('rzm-panel'); if (!p) return;
+  var vv = window.visualViewport;
+  if (RZM.open && vv) { p.style.top = Math.round(vv.offsetTop) + 'px'; p.style.height = Math.round(vv.height) + 'px'; p.style.bottom = 'auto'; }
+  else { p.style.top = ''; p.style.height = ''; p.style.bottom = ''; }
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', function() {
+    rzmFit();
+    var ta = document.getElementById('rzm-input'), b = document.getElementById('rzm-body');
+    if (RZM.open && ta && document.activeElement === ta && b) b.scrollTop = b.scrollHeight;
+  });
+  window.visualViewport.addEventListener('scroll', rzmFit);
+}
 function rzmOpen(p, ref, context) {
   if (!RZ.session || !RZ.member) { showToast('Connecte-toi à ton compte pour les messages', 'rgba(229,57,53,.9)'); return; }
   if (!rzmIsAdmin()) p = RZ.member.profile_id;
@@ -11067,7 +11088,9 @@ function rzmOpen(p, ref, context) {
     p = un.length ? un[un.length - 1].profile_id : (CURRENT_PROFILE && CURRENT_PROFILE !== 'mathieu' ? CURRENT_PROFILE : rzProfiles().filter(function(x) { return x !== 'mathieu'; })[0]);
   }
   RZM.profile = p; RZM.ref = ref || null; RZM.context = context || null;
-  RZM.open = true;
+  RZM.open = true; RZM.stick = true;
+  document.body.classList.add('rzm-open');      // la page derrière ne défile plus
+  rzmFit();
   document.getElementById('rzm-panel').classList.add('show');
   rzmRenderPanel();
   rzmMarkRead();
@@ -11075,11 +11098,14 @@ function rzmOpen(p, ref, context) {
 }
 function rzmClose() {
   RZM.open = false;
+  document.body.classList.remove('rzm-open');
   document.getElementById('rzm-panel').classList.remove('show');
+  rzmFit();
+  var ta0 = document.getElementById('rzm-input'); if (ta0) ta0.blur();      // referme le clavier
   rzmUpdateBadges();
 }
-function rzmSwitch(p) { RZM.profile = p; RZM.ref = null; RZM.context = null; rzmRenderPanel(); rzmMarkRead(); }
-function rzmClearRef() { RZM.ref = null; RZM.context = null; rzmRenderPanel(); rzmMarkRead(); }
+function rzmSwitch(p) { RZM.profile = p; RZM.ref = null; RZM.context = null; RZM.stick = true; rzmRenderPanel(); rzmMarkRead(); }
+function rzmClearRef() { RZM.ref = null; RZM.context = null; RZM.stick = true; rzmRenderPanel(); rzmMarkRead(); }
 
 function rzmMarkRead() {
   var p = RZM.profile, ref = RZM.ref;
@@ -11105,6 +11131,14 @@ function rzmRenderPanel() {
   var head = document.getElementById('rzm-head');
   if (!body || !head || !p) return;
   var me = rzmMyUid();
+  var msgs = RZM.list.filter(function(c) { return c.profile_id === p && (!RZM.ref || c.ref === RZM.ref); });
+  // Mise à jour auto (toutes les 30 s) sans rien de nouveau → on ne touche à rien : plus de saut, plus de scintillement
+  var sig = [p, RZM.ref || '', RZM.context || '', rzmIsAdmin() ? rzProfiles().map(function(x) { return rzmUnread(x).length; }).join(',') : '',
+    msgs.map(function(c) { return c.id + ':' + (c.read_at ? 1 : 0); }).join(',')].join('|');
+  var toBottom = RZM.stick; RZM.stick = false;
+  if (sig === RZM._sig && !toBottom) return;
+  RZM._sig = sig;
+  var wasNear = (body.scrollHeight - body.scrollTop - body.clientHeight) < 80, prevTop = body.scrollTop;
   // En-tête : onglets des profils pour l'admin
   var h = '';
   if (rzmIsAdmin()) {
@@ -11121,7 +11155,6 @@ function rzmRenderPanel() {
   }
   head.innerHTML = h;
 
-  var msgs = RZM.list.filter(function(c) { return c.profile_id === p && (!RZM.ref || c.ref === RZM.ref); });
   if (!msgs.length) {
     body.innerHTML = '<div class="rzm-empty">' + (RZM.ref ? 'Aucun commentaire sur cet élément pour l’instant.' : 'Aucun message pour l’instant.') + '</div>';
   } else {
@@ -11140,7 +11173,9 @@ function rzmRenderPanel() {
   var ta = document.getElementById('rzm-input');
   if (ta) ta.placeholder = RZM.ref ? 'Ton commentaire sur ' + (RZM.context || 'cet élément') + '…'
     : (rzmIsAdmin() ? 'Message pour ' + PROFILE_CONFIG[p].name + '…' : 'Ton message pour Mathieu…');
-  setTimeout(function() { body.scrollTop = body.scrollHeight; }, 30);
+  // en bas à l'ouverture / à l'envoi / si on était déjà en bas ; sinon on garde la position de lecture
+  if (toBottom || wasNear) setTimeout(function() { body.scrollTop = body.scrollHeight; }, 30);
+  else body.scrollTop = prevTop;
 }
 
 function rzmSend() {
@@ -11154,7 +11189,7 @@ function rzmSend() {
   RZ.sb.rpc('post_comment', args).then(function(res) {
     RZM.sending = false; btn.disabled = false; btn.textContent = 'ENVOYER';
     if (res.error) { rzmErr(rzErrFr(res.error)); return; }
-    ta.value = ''; rzmErr('');
+    ta.value = ''; ta.style.height = ''; RZM.stick = true; rzmErr('');
     if (res.data && res.data.id) { RZM.list.push(res.data); RZM.seen[res.data.id] = 1; }
     rzmRenderPanel(); rzmUpdateBadges();
   }, function(e) {
@@ -11232,6 +11267,13 @@ setInterval(function() {
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'visible' && RZ.session && RZ.member) rzmLoad();
 });
+(function() {
+  var ta = document.getElementById('rzm-input'); if (!ta) return;
+  ta.addEventListener('input', function() { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 120) + 'px'; });
+  ta.addEventListener('focus', function() {
+    setTimeout(function() { rzmFit(); var b = document.getElementById('rzm-body'); if (b) b.scrollTop = b.scrollHeight; }, 350);
+  });
+})();
 // Cas où la connexion s'est faite avant le chargement de ce module
 if (RZ.session && RZ.member) rzmLoad();
 
