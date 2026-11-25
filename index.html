@@ -2724,6 +2724,71 @@ body.rzm-open #scroll-area{overflow:hidden}
 #rzm-send:disabled{opacity:.6}
 #rzm-err{font-size:11px;color:#FF5252;min-height:0;margin-top:4px}
 #rzm-err:empty{display:none}
+
+/* ══ TABLEAU DE BORD ADMIN ══ */
+#rzd-panel{position:fixed;inset:0;z-index:10042;background:rgba(0,0,0,.75);display:none;align-items:flex-end;justify-content:center;overscroll-behavior:contain}
+#rzd-panel.show{display:flex}
+body.rzd-open #scroll-area{overflow:hidden}
+.rzd-sheet{width:100%;max-width:520px;height:94%;max-height:100%;display:flex;flex-direction:column;background:var(--s1,#0f0f0f);
+  border-top:1px solid #FFB300;border-radius:18px 18px 0 0;overflow:hidden}
+.rzd-title{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;font-family:'Bebas Neue',sans-serif;font-size:19px;
+  color:#FFB300;letter-spacing:1px;padding:12px 4px 4px 16px;white-space:nowrap;gap:4px}
+.rzd-tb{display:flex;align-items:center;flex-shrink:0}
+.rzd-x{font-size:13px;color:var(--dim,#777);cursor:pointer;letter-spacing:1.5px;padding:12px 12px;white-space:nowrap}
+.rzd-x.cl{font-size:20px;padding:8px 16px 8px 10px;line-height:1;color:#aaa}
+.rzd-x.rf{display:inline-block;font-size:22px;color:#FFB300;padding:8px 12px;line-height:1}
+.rzd-x.rf.spin{animation:rzspin 1s linear infinite}
+#rzd-body{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  padding:6px 14px calc(18px + env(safe-area-inset-bottom,0px))}
+.rzd-sum{display:flex;gap:8px;margin:4px 0 12px}
+.rzd-sum>div{flex:1;background:var(--s2,#151515);border:1px solid var(--s4,#222);border-radius:10px;padding:9px 4px;text-align:center}
+.rzd-sum b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;color:#FFB300;letter-spacing:1px}
+.rzd-sum span{display:block;font-size:9px;letter-spacing:1.2px;color:var(--dim,#777);margin-top:3px}
+.rzd-card{background:var(--s2,#151515);border:1px solid var(--s4,#222);border-radius:12px;padding:12px;margin-bottom:10px}
+.rzd-top{display:flex;align-items:center;gap:10px}
+.rzd-who{flex:1;min-width:0}
+.rzd-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:#fff;line-height:1.1}
+.rzd-me{font-size:10px;letter-spacing:1.5px;color:#FFB300;border:1px solid rgba(255,179,0,.5);border-radius:5px;padding:0 5px;margin-left:4px;vertical-align:2px}
+.rzd-sub{font-size:11px;color:var(--dim,#777);margin-top:2px}
+.rzd-chip{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1.5px;border:1px solid;border-radius:6px;padding:3px 7px;flex-shrink:0;white-space:nowrap}
+.rzd-alert{margin-top:10px;background:rgba(255,179,0,.08);border:1px solid rgba(255,179,0,.3);border-radius:8px;padding:7px 10px;font-size:12px;color:#FFB300;line-height:1.5}
+.rzd-stats{display:flex;gap:6px;margin-top:10px}
+.rzd-st{flex:1;background:#0c0c0c;border:1px solid var(--s4,#222);border-radius:8px;padding:8px 2px 6px;text-align:center}
+.rzd-st b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;color:#fff}
+.rzd-st span{display:block;font-size:9px;letter-spacing:1.2px;color:var(--dim,#777);margin-top:3px}
+.rzd-cal{display:flex;gap:14px;align-items:center;margin-top:12px}
+.rzd-gl,.rzd-g{display:grid;grid-template-columns:repeat(7,15px);gap:3px}
+.rzd-gl i{font-style:normal;font-size:9px;color:var(--dim,#777);text-align:center;margin-bottom:2px}
+.rzd-d{width:15px;height:15px;border-radius:3px;background:#1d1d1d}
+.rzd-d.d{background:#00C853}
+.rzd-d.f{background:transparent;border:1px dashed #2a2a2a;box-sizing:border-box}
+.rzd-d.t{box-shadow:0 0 0 1.5px #FFB300}
+.rzd-calinfo{font-size:12px;color:#ddd;line-height:1.5;min-width:0}
+.rzd-calinfo b{color:#fff}
+.rzd-h2{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:2.5px;color:var(--dim,#777);margin-bottom:3px}
+.rzd-dim{color:var(--dim,#777)}
+.rzd-line{display:flex;gap:8px;margin-top:11px;font-size:13px;color:#ddd;line-height:1.4}
+.rzd-ic{width:20px;flex-shrink:0;text-align:center}
+.rzd-lv{flex:1;min-width:0}
+.rzd-lv b{color:#fff}
+.rzd-lv small{display:block;color:var(--dim,#777);font-size:11px;margin-top:1px}
+.rzd-pill{display:inline-block;font-size:11px;border:1px solid;border-radius:6px;padding:0 6px;margin-left:8px}
+.rzd-det{margin-top:12px;border-top:1px solid var(--s4,#222);padding-top:2px}
+.rzd-h{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:2.5px;color:var(--dim,#777);margin:12px 0 4px}
+.rzd-li{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:#ddd;padding:5px 0;border-bottom:1px solid #1b1b1b}
+.rzd-li span{min-width:0;overflow-wrap:anywhere}
+.rzd-li em{font-style:normal;color:var(--dim,#777);white-space:nowrap;flex-shrink:0}
+.rzd-spk{display:flex;justify-content:space-between;font-size:10px;color:var(--dim,#777);margin-top:2px}
+.rzd-btns{display:flex;gap:8px;margin-top:12px}
+.rzd-b{flex:1;position:relative;display:flex;align-items:center;justify-content:center;white-space:nowrap;min-height:44px;box-sizing:border-box;
+  text-align:center;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;padding:0 4px;border-radius:9px;
+  border:1px solid rgba(255,179,0,.5);background:rgba(255,179,0,.1);color:#FFB300;cursor:pointer}
+.rzd-b.blue{border-color:rgba(41,121,255,.55);background:rgba(41,121,255,.1);color:#2979FF}
+.rzd-b.ghost{border-color:#333;background:transparent;color:#aaa}
+.rzd-b i{position:absolute;top:-7px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:#E53935;color:#fff;font-style:normal;
+  font-size:11px;line-height:18px;text-align:center;padding:0 4px;box-sizing:border-box}
+.rzd-foot{font-size:10px;color:var(--dim,#777);text-align:center;line-height:1.5;margin:6px 8px 0}
+#rz-dash-btn{border-color:rgba(255,179,0,.5)!important;color:#FFB300!important}
 </style>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#080808">
@@ -2873,6 +2938,14 @@ body.rzm-open #scroll-area{overflow:hidden}
   </div>
 </div>
 
+<!-- ══ RIZE TABLEAU DE BORD (admin) ══ -->
+<div id="rzd-panel" onclick="if(event.target===this)rzdClose()">
+  <div class="rzd-sheet">
+    <div class="rzd-title">&#x1F4CA; TABLEAU DE BORD <span class="rzd-tb"><span class="rzd-x rf" id="rzd-refresh" onclick="rzdRefresh()" title="Actualiser">&#x21BB;</span><span class="rzd-x cl" onclick="rzdClose()" title="Fermer">&#x2715;</span></span></div>
+    <div id="rzd-body"></div>
+  </div>
+</div>
+
 <!-- ══ RIZE CLOUD : panneau admin ══ -->
 <div id="rz-admin" onclick="if(event.target===this)rzCloseAdmin()">
   <div class="rz-sheet">
@@ -2993,6 +3066,9 @@ body.rzm-open #scroll-area{overflow:hidden}
   <div class="legal-link" onclick="openLegal()">MENTIONS L&Eacute;GALES &middot; &copy; 2026 MATHIEU NOUGU&Egrave;S</div>
 
   <!-- Bouton paramètres -->
+  <div class="home-backup-btn" id="rz-dash-btn" onclick="rzdOpen()" style="display:none">
+    &#x1F4CA; TABLEAU DE BORD
+  </div>
   <div class="home-backup-btn" id="rz-admin-btn" onclick="rzOpenAdmin()" style="display:none">
     &#x1F451; ADMIN &#x2014; TOUS LES PROFILS
   </div>
@@ -10567,7 +10643,7 @@ function rzSyncNow() {
 
 /* Rafraîchir l'écran quand des données arrivent (jamais au milieu d'une action) */
 function rzOverlayOpen() {
-  if (document.querySelector('[id$="-modal"].show, [id$="-overlay"].show, #rz-admin.show, #rz-auth.show, #rzm-panel.show')) return true;
+  if (document.querySelector('[id$="-modal"].show, [id$="-overlay"].show, #rz-admin.show, #rz-auth.show, #rzm-panel.show, #rzd-panel.show')) return true;
   // Mode remplacement / ajout d'exercice en cours
   if (document.querySelector('#lib-replace-banner.show, #lib-add-banner.show')) return true;
   // L'utilisateur vient de toucher ou de faire défiler l'écran : on attend qu'il ait fini
@@ -10638,6 +10714,8 @@ function rzApplyProfileFilter() {
   });
   var adm = rzEl('rz-admin-btn');
   if (adm) adm.style.display = (m && m.is_admin) ? '' : 'none';
+  var dsh = rzEl('rz-dash-btn');
+  if (dsh) dsh.style.display = (m && m.is_admin) ? '' : 'none';
   var title = document.querySelector('#profile-select-view .profile-select-title');
   if (title) title.textContent = (m && m.is_admin) ? 'CHOISIS UN PROFIL (ADMIN)' : 'TON PROFIL';
 }
@@ -10786,7 +10864,8 @@ function rzOpenAdmin() {
     (r[2].data || []).forEach(function(x) { if (!last[x.profile_id]) last[x.profile_id] = x.updated_at; });
     RZ_ADMIN.members = members; RZ_ADMIN.invites = invites;
 
-    var html = '<div class="rz-help">Mets l’email de chaque personne : quand elle crée son compte avec cet email, elle arrive directement dans son profil. Un email absent de cette liste n’a accès à rien.</div>';
+    var html = '<button class="rz-btn ghost" style="margin-top:14px" onclick="rzCloseAdmin();rzdOpen()">&#x1F4CA; TABLEAU DE BORD</button>';
+    html += '<div class="rz-help">Mets l’email de chaque personne : quand elle crée son compte avec cet email, elle arrive directement dans son profil. Un email absent de cette liste n’a accès à rien.</div>';
     html += '<div class="rz-sec">PROFILS</div>';
     rzProfiles().forEach(function(p) {
       var c = PROFILE_CONFIG[p];
@@ -11276,6 +11355,392 @@ document.addEventListener('visibilitychange', function() {
 })();
 // Cas où la connexion s'est faite avant le chargement de ce module
 if (RZ.session && RZ.member) rzmLoad();
+
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   RIZE TABLEAU DE BORD — vue admin : une carte par profil
+   - Lecture seule : les données viennent du cloud (table profile_data),
+     calculées en mémoire. Rien n'est écrit, ni dans le cloud ni dans le
+     stockage local de ce téléphone.
+   - Réservé à l'admin (bouton caché + refus dans rzdOpen + RLS côté serveur)
+══════════════════════════════════════════════════════════════════ */
+var RZD = { open: false, loading: false, data: null, at: 0, err: '', exp: {}, tok: 0 };
+var RZD_KEYS = ['cal-done-v1', 'records-v1', 'weight-log-v1', 'nutri-meals-v1', 'nutri-profile-v1'];
+var RZD_MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+
+function rzdIsAdmin() { return !!(RZ.member && RZ.member.is_admin); }
+function rzdJ(v, fb) {
+  if (v === null || v === undefined) return fb;
+  if (typeof v !== 'string') return v;
+  try { var o = JSON.parse(v); return (o === null || o === undefined) ? fb : o; } catch (e) { return fb; }
+}
+function rzdKey(d) {
+  var m = d.getMonth() + 1, j = d.getDate();
+  return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (j < 10 ? '0' : '') + j;
+}
+function rzdDN(key) { var a = String(key).split('-'); return Math.round(Date.UTC(+a[0], +a[1] - 1, +a[2]) / 86400000); }
+function rzdOkDate(k) { return /^\d{4}-\d{2}-\d{2}$/.test(String(k)); }
+function rzdNum(x) { var n = Number(x); return isFinite(n) ? n : 0; }
+function rzdR1(x) { return Math.round(x * 10) / 10; }
+function rzdDateFr(key) { var a = String(key).split('-'); return (+a[2]) + ' ' + RZD_MOIS[(+a[1]) - 1]; }
+function rzdKg(x) { return String(x).replace('.', ','); }
+function rzdN(x) { return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+function rzdSigned(x) { return (x > 0 ? '+' : x < 0 ? '−' : '') + rzdKg(Math.abs(x)); }
+function rzdAgoTs(ms) {
+  if (!ms) return null;
+  var min = (Date.now() - ms) / 60000;
+  if (min < 2) return 'à l’instant';
+  if (min < 60) return 'il y a ' + Math.round(min) + ' min';
+  if (min < 1440) return 'il y a ' + Math.round(min / 60) + ' h';
+  var d = Math.floor(min / 1440);
+  return d === 1 ? 'hier' : 'il y a ' + d + ' j';
+}
+function rzdAgoDays(n) { return n <= 0 ? 'aujourd’hui' : n === 1 ? 'hier' : 'il y a ' + n + ' j'; }
+function rzdNameFromKey(k) { return String(k).replace(/^wt-[A-Za-z0-9]+-/, '').replace(/_+/g, ' ').trim() || String(k); }
+function rzdDayType(key) {                       // même règle que getDayType(), sans le « manqué » de la personne
+  var a = String(key).split('-'), dow = new Date(+a[0], +a[1] - 1, +a[2]).getDay();
+  if (dow === 6) return 'repos';
+  var s = (typeof HOME_SCHEDULE !== 'undefined') ? HOME_SCHEDULE[dow] : null;
+  if (!s) return 'repos';
+  if (s.tab === null && (s.label.indexOf('Foot') !== -1 || s.label.indexOf('Match') !== -1)) return 'foot';
+  if (s.tab !== null) return 'muscu';
+  return 'repos';
+}
+
+/* ── Calcul des chiffres d'un profil à partir de ses lignes cloud ─────────
+   rows = { 'cal-done-v1': {value, updated_at}, … }   (pur : aucune lecture du DOM) */
+function rzdCompute(p, rows, now, extra) {
+  now = now || new Date(); extra = extra || {};
+  var tk = rzdKey(now), tn = rzdDN(tk);
+  var c = { p: p, today: tk };
+
+  // dernière activité = ligne de données la plus récente ; dernière ouverture = members.last_seen_at
+  var lastAt = extra.lastAt ? (Date.parse(extra.lastAt) || 0) : 0;
+  Object.keys(rows).forEach(function(k) { var t = Date.parse(rows[k].updated_at); if (t > lastAt) lastAt = t; });
+  c.lastAt = lastAt || null;
+  c.seenAt = extra.seenAt ? Date.parse(extra.seenAt) || null : null;
+  c.hasAccount = !!extra.hasAccount;
+  c.refAt = Math.max(c.lastAt || 0, c.seenAt || 0) || null;
+
+  // séances validées (calendrier)
+  var done = rzdJ(rows['cal-done-v1'] && rows['cal-done-v1'].value, {});
+  var days = Object.keys(done).filter(function(k) { return done[k] === true && rzdOkDate(k); }).sort();
+  var doneSet = {};
+  days.forEach(function(k) { doneSet[rzdDN(k)] = true; });
+  var weekStart = tn - ((now.getDay() + 6) % 7);
+  c.sessWeek = days.filter(function(k) { var n = rzdDN(k); return n >= weekStart && n <= tn; }).length;
+  c.sess30 = days.filter(function(k) { var n = rzdDN(k); return n >= tn - 29 && n <= tn; }).length;
+  c.sessTotal = days.filter(function(k) { return rzdDN(k) <= tn; }).length;
+  var past = days.filter(function(k) { return rzdDN(k) <= tn; });
+  c.lastSess = past.length ? past[past.length - 1] : null;
+  c.grid = [];                                    // 4 semaines, lundi → dimanche
+  for (var r = 0; r < 4; r++) {
+    var row = [];
+    for (var j = 0; j < 7; j++) {
+      var n = weekStart - 21 + r * 7 + j;
+      row.push({ s: n > tn ? 'f' : (doneSet[n] ? 'd' : 'n'), t: n === tn });
+    }
+    c.grid.push(row);
+  }
+
+  // records
+  var rec = rzdJ(rows['records-v1'] && rows['records-v1'].value, {});
+  var rl = Object.keys(rec).map(function(k) {
+    var x = rec[k] || {};
+    return { key: k, name: x.name || rzdNameFromKey(k), best: rzdNum(x.best), date: rzdOkDate(x.date) ? x.date : null };
+  }).filter(function(x) { return x.best > 0; });
+  c.recCount = rl.length;
+  var recNew = rl.filter(function(x) { return x.date && tn - rzdDN(x.date) <= 30 && tn - rzdDN(x.date) >= 0; })
+    .sort(function(a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : b.best - a.best; });
+  c.recNew30 = recNew.length;
+  c.recRecent = recNew.slice(0, 5);
+
+  // charges (historique des 10 dernières séances par exercice)
+  var loads = [];
+  Object.keys(rows).filter(function(k) { return /^wt-/.test(k); }).forEach(function(k) {
+    var d = rzdJ(rows[k].value, null); if (!d || typeof d !== 'object') return;
+    var h = Array.isArray(d.history) && d.history.length ? d.history
+      : (Array.isArray(d.weights) ? [{ date: d.date, weights: d.weights }] : []);
+    h = h.filter(function(e) { return e && rzdOkDate(e.date); }).map(function(e) {
+      var mx = e.max !== undefined ? rzdNum(e.max) : Math.max.apply(null, (e.weights || [0]).map(rzdNum));
+      return { date: e.date, max: mx };
+    }).filter(function(e) { return e.max > 0; }).sort(function(a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+    if (!h.length) return;
+    var nm = (rec[k] && rec[k].name) || rzdNameFromKey(k);
+    loads.push({ name: nm, date: h[0].date, max: h[0].max, prev: h[1] ? h[1].max : null });
+  });
+  loads.sort(function(a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : (a.name < b.name ? -1 : 1); });
+  c.loadsN = loads.length;
+  c.loads = loads.slice(0, 5);
+
+  // poids
+  var wl = rzdJ(rows['weight-log-v1'] && rows['weight-log-v1'].value, []);
+  if (!Array.isArray(wl)) wl = [];
+  wl = wl.filter(function(e) { return e && rzdOkDate(e.date) && rzdNum(e.weight) > 0; });
+  var ws = wl.slice().sort(function(a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+  c.weightN = ws.length;
+  c.weight = null;
+  if (ws.length) {
+    var lw = ws[0], ln = rzdDN(lw.date);
+    var ref = ws.filter(function(e) { return ln - rzdDN(e.date) >= 6; })[0];   // même règle que l'app : une mesure d'au moins 6 jours avant
+    c.weight = { kg: rzdNum(lw.weight), date: lw.date, ago: tn - ln,
+      delta: ref ? rzdR1(rzdNum(lw.weight) - rzdNum(ref.weight)) : null, span: ref ? ln - rzdDN(ref.date) : null };
+    c.wSeries = ws.slice(0, 12).reverse().map(function(e) { return { date: e.date, kg: rzdNum(e.weight) }; });
+  }
+
+  // nutrition : moyenne des 7 jours COMPLETS précédents (aujourd'hui est en cours, il est à part)
+  var np = rzdJ(rows['nutri-profile-v1'] && rows['nutri-profile-v1'].value, null);
+  if (np && typeof np !== 'object') np = null;
+  var meals = rzdJ(rows['nutri-meals-v1'] && rows['nutri-meals-v1'].value, {});
+  if (!meals || typeof meals !== 'object' || Array.isArray(meals)) meals = {};
+  function dayTot(key) {
+    var a = meals[key]; if (!Array.isArray(a) || !a.length) return null;
+    var P = 0, G = 0, L = 0;
+    a.forEach(function(m) { P += rzdNum(m && m.p); G += rzdNum(m && m.g); L += rzdNum(m && m.l); });
+    return { p: P, kcal: Math.round(P * 4 + G * 4 + L * 9), key: key };
+  }
+  var logged = [];
+  for (var i = 1; i <= 7; i++) {
+    var dd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    var t = dayTot(rzdKey(dd)); if (t) logged.push(t);
+  }
+  var tt = dayTot(tk);
+  c.nutri = null;
+  if (np || logged.length || tt) {
+    var nu = { objectif: np && np.objectif || null, days: logged.length, hasProfile: !!np, today: tt ? tt.kcal : null };
+    if (logged.length) {
+      nu.avgKcal = Math.round(logged.reduce(function(s, x) { return s + x.kcal; }, 0) / logged.length);
+      nu.avgP = Math.round(logged.reduce(function(s, x) { return s + x.p; }, 0) / logged.length);
+      if (np && typeof calcMacros === 'function') {
+        try {
+          var tg = logged.map(function(x) { return calcMacros(np, false, rzdDayType(x.key)); });
+          nu.tgtKcal = Math.round(tg.reduce(function(s, x) { return s + x.kcal; }, 0) / tg.length);
+          nu.tgtP = Math.round(tg.reduce(function(s, x) { return s + x.p; }, 0) / tg.length);
+        } catch (e) {}
+      }
+    }
+    c.nutri = nu;
+  }
+
+  // à surveiller
+  c.alerts = [];
+  if (c.refAt) {
+    if (!c.lastSess) c.alerts.push('Aucune séance validée pour l’instant');
+    else if (tn - rzdDN(c.lastSess) >= 8) c.alerts.push('Aucune séance validée depuis ' + (tn - rzdDN(c.lastSess)) + ' jours');
+    if (c.weight && c.weight.ago >= 10) c.alerts.push('Dernière pesée il y a ' + c.weight.ago + ' jours');
+    if (c.nutri && c.nutri.hasProfile && !c.nutri.days && !c.nutri.today) c.alerts.push('Aucun repas enregistré depuis 7 jours');
+  }
+  return c;
+}
+
+function rzdStatus(c) {
+  if (!c.refAt) return { t: 'AUCUNE DONNÉE', col: '#777' };
+  var d = (Date.now() - c.refAt) / 86400000;
+  if (d <= 3) return { t: 'ACTIF', col: '#00C853' };
+  if (d <= 7) return { t: 'À RELANCER', col: '#FFB300' };
+  return { t: 'INACTIF', col: '#E53935' };
+}
+
+/* ── Récupération cloud (lecture seule) ─────────────────────────────── */
+function rzdFetchProfile(p) {
+  return RZ.sb.from('profile_data').select('key,updated_at').eq('profile_id', p).limit(1000).then(function(r) {
+    if (r.error) throw r.error;
+    var all = r.data || [], rows = {}, last = null;
+    all.forEach(function(x) { if (!last || Date.parse(x.updated_at) > Date.parse(last)) last = x.updated_at; });
+    var want = all.filter(function(x) { return RZD_KEYS.indexOf(x.key) >= 0; }).map(function(x) { return x.key; });
+    var wt = all.filter(function(x) { return /^wt-/.test(x.key); })
+      .sort(function(a, b) { return Date.parse(b.updated_at) - Date.parse(a.updated_at); }).slice(0, 40).map(function(x) { return x.key; });
+    var keys = want.concat(wt);
+    if (!keys.length) return { p: p, rows: rows, last: last };
+    var chunks = [];
+    for (var i = 0; i < keys.length; i += 20) chunks.push(keys.slice(i, i + 20));
+    return Promise.all(chunks.map(function(ch) {
+      return RZ.sb.from('profile_data').select('key,value,updated_at').eq('profile_id', p).in('key', ch).then(function(r2) {
+        if (r2.error) throw r2.error;
+        (r2.data || []).forEach(function(x) { rows[x.key] = { value: x.value, updated_at: x.updated_at }; });
+      });
+    })).then(function() { return { p: p, rows: rows, last: last }; });
+  });
+}
+function rzdFetch() {
+  var profs = rzProfiles();
+  return Promise.all([
+    Promise.all(profs.map(rzdFetchProfile)),
+    RZ.sb.from('members').select('profile_id,last_seen_at')
+  ]).then(function(res) {
+    if (res[1].error) throw res[1].error;
+    var mem = {};
+    (res[1].data || []).forEach(function(m) { if (m.profile_id) mem[m.profile_id] = m; });
+    var now = new Date();
+    return res[0].map(function(x) {
+      var m = mem[x.p];     // x.last = dernière écriture de TOUTES les clés du profil, pas seulement celles lues ici
+      return rzdCompute(x.p, x.rows, now, { lastAt: x.last, seenAt: m && m.last_seen_at, hasAccount: !!m });
+    });
+  });
+}
+
+/* ── Affichage ──────────────────────────────────────────────────────── */
+var RZD_OBJ = { masse: 'prise de masse', seche: 'sèche', maintien: 'maintien' };
+
+function rzdSpark(series) {
+  if (!series || series.length < 2) return '';
+  var W = 300, H = 46, pad = 5;
+  var mn = Math.min.apply(null, series.map(function(s) { return s.kg; })), mx = Math.max.apply(null, series.map(function(s) { return s.kg; }));
+  if (mx - mn < 0.5) { mx += 0.25; mn -= 0.25; }
+  var pts = series.map(function(s, i) {
+    var x = pad + (W - 2 * pad) * i / (series.length - 1), y = pad + (H - 2 * pad) * (1 - (s.kg - mn) / (mx - mn));
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  });
+  var last = pts[pts.length - 1].split(',');
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '" preserveAspectRatio="none" style="display:block">'
+    + '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#FFB300" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'
+    + '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="3.5" fill="#FFB300"/></svg>'
+    + '<div class="rzd-spk"><span>' + rzdDateFr(series[0].date) + ' · ' + rzdKg(series[0].kg) + ' kg</span><span>' + rzdDateFr(series[series.length - 1].date) + ' · ' + rzdKg(series[series.length - 1].kg) + ' kg</span></div>';
+}
+
+function rzdCard(c) {
+  var cfg = PROFILE_CONFIG[c.p], st = rzdStatus(c), me = (c.p === 'mathieu');
+  var h = '<div class="rzd-card" id="rzd-card-' + c.p + '">';
+  var act = [];
+  if (c.lastAt) act.push('Données ' + rzdAgoTs(c.lastAt));
+  if (c.seenAt) act.push('app ouverte ' + rzdAgoTs(c.seenAt));
+  if (!act.length) act.push(c.hasAccount ? 'Compte créé, rien reçu pour l’instant' : 'Pas encore de compte');
+  h += '<div class="rzd-top"><div class="profile-avatar rz-av" style="background:' + cfg.color + '">' + cfg.initial + '</div>'
+    + '<div class="rzd-who"><div class="rzd-name">' + rzEsc(cfg.name) + (me ? ' <span class="rzd-me">TOI</span>' : '') + '</div>'
+    + '<div class="rzd-sub">' + rzEsc(act.join(' · ')) + '</div></div>'
+    + '<div class="rzd-chip" style="color:' + st.col + ';border-color:' + st.col + '">' + st.t + '</div></div>';
+
+  if (c.alerts.length) h += '<div class="rzd-alert">⚠️ ' + c.alerts.map(rzEsc).join('<br>⚠️ ') + '</div>';
+
+  h += '<div class="rzd-stats">'
+    + '<div class="rzd-st"><b>' + c.sessWeek + '</b><span>CETTE SEMAINE</span></div>'
+    + '<div class="rzd-st"><b>' + c.sess30 + '</b><span>30 JOURS</span></div>'
+    + '<div class="rzd-st"><b>' + c.recCount + '</b><span>RECORDS' + (c.recNew30 ? ' · +' + c.recNew30 : '') + '</span></div></div>';
+
+  // 4 semaines
+  h += '<div class="rzd-cal"><div><div class="rzd-gl"><i>L</i><i>M</i><i>M</i><i>J</i><i>V</i><i>S</i><i>D</i></div><div class="rzd-g">';
+  c.grid.forEach(function(row) { row.forEach(function(d) { h += '<div class="rzd-d ' + d.s + (d.t ? ' t' : '') + '"></div>'; }); });
+  h += '</div></div><div class="rzd-calinfo"><div class="rzd-h2">4 SEMAINES</div>'
+    + (c.lastSess ? 'Dernière séance : <b>' + rzdAgoDays(rzdDN(c.today) - rzdDN(c.lastSess)) + '</b>' : 'Aucune séance validée')
+    + '<br><span class="rzd-dim">' + c.sessTotal + ' jour' + (c.sessTotal > 1 ? 's' : '') + ' validé' + (c.sessTotal > 1 ? 's' : '') + ' au total</span></div></div>';
+
+  // poids
+  h += '<div class="rzd-line"><div class="rzd-ic">⚖️</div><div class="rzd-lv">';
+  if (c.weight) {
+    var w = c.weight, goal = c.nutri && c.nutri.objectif, pill = '';
+    if (w.delta !== null) {
+      var good = (goal === 'masse' && w.delta > 0) || (goal === 'seche' && w.delta < 0);
+      var col = w.delta === 0 || (goal !== 'masse' && goal !== 'seche') ? '#888' : good ? '#00C853' : '#E53935';
+      pill = '<span class="rzd-pill" style="color:' + col + ';border-color:' + col + '">' + rzdSigned(w.delta) + ' kg / ' + w.span + ' j</span>';
+    }
+    h += '<b>' + rzdKg(w.kg) + ' kg</b>' + pill + '<small>pesée ' + rzdAgoDays(w.ago) + ' · ' + c.weightN + ' mesure' + (c.weightN > 1 ? 's' : '') + '</small>';
+  } else h += '<span class="rzd-dim">Aucune pesée</span>';
+  h += '</div></div>';
+
+  // nutrition
+  h += '<div class="rzd-line"><div class="rzd-ic">🍽</div><div class="rzd-lv">';
+  var n = c.nutri;
+  if (n && n.days) {
+    h += '<b>' + rzdN(n.avgKcal) + ' kcal</b> / jour' + (n.tgtKcal ? ' <span class="rzd-dim">(cible ≈ ' + rzdN(n.tgtKcal) + ')</span>' : '')
+      + '<small>' + n.avgP + ' g de protéines' + (n.tgtP ? ' (cible ≈ ' + n.tgtP + ')' : '') + ' · ' + n.days + '/7 jours enregistrés'
+      + (n.objectif && RZD_OBJ[n.objectif] ? ' · objectif ' + RZD_OBJ[n.objectif] : '') + (n.today ? ' · aujourd’hui ' + rzdN(n.today) + ' kcal' : '') + '</small>';
+  } else if (n && n.today) {
+    h += '<b>Aujourd’hui ' + rzdN(n.today) + ' kcal</b><small>pas assez de jours enregistrés pour une moyenne</small>';
+  } else if (n && n.hasProfile) {
+    h += '<span class="rzd-dim">Aucun repas enregistré sur 7 jours</span>' + (n.objectif && RZD_OBJ[n.objectif] ? '<small>objectif ' + RZD_OBJ[n.objectif] + '</small>' : '');
+  } else h += '<span class="rzd-dim">Nutrition non renseignée</span>';
+  h += '</div></div>';
+
+  // détails
+  var open = !!RZD.exp[c.p];
+  if (open) {
+    h += '<div class="rzd-det">';
+    h += '<div class="rzd-h">CHARGES RÉCENTES' + (c.loadsN ? ' · ' + c.loadsN + ' exercice' + (c.loadsN > 1 ? 's' : '') + ' suivi' + (c.loadsN > 1 ? 's' : '') : '') + '</div>';
+    if (c.loads.length) c.loads.forEach(function(l) {
+      var d = l.prev !== null ? rzdR1(l.max - l.prev) : null;
+      var dcol = d === null || d === 0 ? '#888' : d > 0 ? '#00C853' : '#E53935';
+      h += '<div class="rzd-li"><span>' + rzEsc(l.name) + '</span><em><b style="color:#fff">' + rzdKg(l.max) + ' kg</b>'
+        + (d !== null && d !== 0 ? ' <span style="color:' + dcol + '">' + rzdSigned(d) + '</span>' : '') + ' · ' + rzdDateFr(l.date) + '</em></div>';
+    }); else h += '<div class="rzd-li"><span class="rzd-dim">Aucune charge enregistrée</span></div>';
+    h += '<div class="rzd-h">RECORDS DES 30 DERNIERS JOURS</div>';
+    if (c.recRecent.length) c.recRecent.forEach(function(r) {
+      h += '<div class="rzd-li"><span>🏆 ' + rzEsc(r.name) + '</span><em><b style="color:#fff">' + rzdKg(r.best) + ' kg</b> · ' + rzdDateFr(r.date) + '</em></div>';
+    }); else h += '<div class="rzd-li"><span class="rzd-dim">Aucun nouveau record</span></div>';
+    if (c.wSeries && c.wSeries.length > 1) h += '<div class="rzd-h">ÉVOLUTION DU POIDS</div>' + rzdSpark(c.wSeries);
+    h += '</div>';
+  }
+
+  var unread = 0;
+  try { unread = (typeof rzmUnread === 'function' && !me) ? rzmUnread(c.p).length : 0; } catch (e) {}
+  h += '<div class="rzd-btns">'
+    + '<div class="rzd-b ghost" onclick="rzdToggle(\'' + c.p + '\')">' + (open ? 'MOINS ▲' : 'DÉTAILS ▼') + '</div>'
+    + (CURRENT_PROFILE !== c.p ? '<div class="rzd-b" onclick="rzdOpenProfile(\'' + c.p + '\')">OUVRIR</div>' : '')
+    + (me ? '' : '<div class="rzd-b blue" onclick="rzdMsg(\'' + c.p + '\')">💬 MESSAGE' + (unread ? '<i>' + unread + '</i>' : '') + '</div>')
+    + '</div></div>';
+  return h;
+}
+
+function rzdRender() {
+  var el = document.getElementById('rzd-body'); if (!el) return;
+  var top = el.scrollTop, h = '';
+  if (RZD.err && !RZD.data) {
+    h = '<div class="rz-msg" style="margin-top:24px">' + rzEsc(RZD.err) + '</div><div class="rzd-b" style="margin:10px auto;max-width:200px" onclick="rzdRefresh()">RÉESSAYER</div>';
+  } else if (!RZD.data) {
+    h = '<div class="rz-spin"></div><div class="rz-dim" style="text-align:center">Chargement des profils…</div>';
+  } else {
+    var D = RZD.data, act = 0, sw = 0, rn = 0;
+    D.forEach(function(c) { if (c.refAt && Date.now() - c.refAt <= 3 * 86400000) act++; sw += c.sessWeek; rn += c.recNew30; });
+    h += '<div class="rzd-sum"><div><b>' + act + '/' + D.length + '</b><span>ACTIFS (3 J)</span></div>'
+      + '<div><b>' + sw + '</b><span>SÉANCES CETTE SEMAINE</span></div>'
+      + '<div><b>' + rn + '</b><span>RECORDS (30 J)</span></div></div>';
+    if (RZD.err) h += '<div class="rz-msg" style="margin:0 0 8px">' + rzEsc(RZD.err) + ' — chiffres du dernier chargement.</div>';
+    D.forEach(function(c) { h += rzdCard(c); });
+    h += '<div class="rzd-foot">Mis à jour ' + (RZD.loading ? 'en cours…' : rzdAgoTs(RZD.at)) + ' · lecture seule · « jours validés » = cases cochées du calendrier (séances, foot, match).</div>';
+  }
+  el.innerHTML = h;
+  el.scrollTop = top;
+  var rf = document.getElementById('rzd-refresh');
+  if (rf) rf.classList.toggle('spin', !!RZD.loading);
+}
+
+function rzdRefresh() {
+  if (!rzdIsAdmin() || !RZ.sb) return;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) { RZD.err = 'Pas de connexion'; rzdRender(); return; }
+  var tok = ++RZD.tok;
+  RZD.loading = true; RZD.err = ''; rzdRender();
+  Promise.resolve().then(rzdFetch).then(function(d) {     // un échec immédiat (même synchrone) finit dans le .catch
+    if (tok !== RZD.tok) return;
+    RZD.data = d; RZD.at = Date.now(); RZD.loading = false; RZD.err = ''; rzdRender();
+  }).catch(function(e) {
+    if (tok !== RZD.tok) return;
+    RZD.loading = false; RZD.err = (typeof rzErrFr === 'function') ? rzErrFr(e) : 'Erreur de chargement'; rzdRender();
+  });
+}
+function rzdOpen() {
+  if (!rzdIsAdmin()) return;
+  var p = document.getElementById('rzd-panel'); if (!p) return;
+  RZD.open = true;
+  document.body.classList.add('rzd-open');
+  p.classList.add('show');
+  rzdRender();
+  if (!RZD.data || Date.now() - RZD.at > 60000) rzdRefresh();
+}
+function rzdClose() {
+  RZD.open = false; RZD.tok++; RZD.loading = false;
+  document.body.classList.remove('rzd-open');
+  var p = document.getElementById('rzd-panel'); if (p) p.classList.remove('show');
+}
+function rzdToggle(p) { RZD.exp[p] = !RZD.exp[p]; rzdRender(); }
+function rzdOpenProfile(p) { rzdClose(); rzAdminOpenProfile(p); }
+function rzdMsg(p) { rzmOpen(p); }
+
+/* le panneau messages s'ouvre PAR-DESSUS le tableau de bord ; à sa fermeture on rafraîchit les pastilles */
+(function() {
+  if (typeof rzmClose !== 'function') return;
+  var orig = rzmClose;
+  rzmClose = function() { orig.apply(this, arguments); if (RZD.open) rzdRender(); };
+})();
 
 </script>
 </body>
