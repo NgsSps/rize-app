@@ -1375,14 +1375,6 @@ body.lib-open #nav{display:none!important}
 #app-bg.blurred {
   filter: blur(12px) brightness(.45);
   transform: scale(1.06);
-};
-  background-size: cover;
-  background-position: center;
-  transition: filter .5s ease, opacity .5s ease;
-}
-#app-bg.blurred {
-  opacity: 0;
-  transition: opacity .4s ease;
 }
 
 /* Home : header transparent */
@@ -10833,7 +10825,7 @@ function rzStatusUpdate() {
   else if (waiting) state = waiting + ' modif(s) en cours d’envoi…';
   else if (RZ.lastSyncAt) state = '✓ À jour (' + new Date(RZ.lastSyncAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ')';
   else state = 'En attente…';
-  el.innerHTML = '<div class="rz-st-who">' + who + '</div><div class="rz-st-state">' + state + '</div>';
+  el.innerHTML = '<div class="rz-st-who">' + rzEsc(who) + '</div><div class="rz-st-state">' + rzEsc(state) + '</div>';
 }
 
 /* ── 7. Panneau admin ──────────────────────────────────────────── */
