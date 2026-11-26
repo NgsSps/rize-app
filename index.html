@@ -2735,23 +2735,23 @@ body.rzm-open #scroll-area{overflow:hidden}
 .rzd-sum>div{flex:1;background:var(--s2,#151515);border:1px solid var(--s4,#222);border-radius:10px;padding:9px 4px;text-align:center}
 .rzd-sum b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;color:#FFB300;letter-spacing:1px}
 .rzd-sum span{display:block;font-size:9px;letter-spacing:1.2px;color:var(--dim,#777);margin-top:3px}
-.rzd-card{background:var(--s2,#151515);border:1px solid var(--s4,#222);border-radius:12px;padding:12px;margin-bottom:10px}
+.rzd-card{--pc:#FFB300;--pcr:255,179,0;background:linear-gradient(150deg,rgba(var(--pcr),.22) 0%,rgba(var(--pcr),.08) 42%,var(--s2,#151515) 100%),var(--s2,#151515);border:1px solid rgba(var(--pcr),.42);border-left:5px solid var(--pc);border-radius:12px;padding:12px 12px 12px 11px;margin-bottom:14px}
 .rzd-top{display:flex;align-items:center;gap:10px}
 .rzd-who{flex:1;min-width:0}
-.rzd-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:#fff;line-height:1.1}
+.rzd-name{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--pc,#fff);line-height:1.1}
 .rzd-me{font-size:10px;letter-spacing:1.5px;color:#FFB300;border:1px solid rgba(255,179,0,.5);border-radius:5px;padding:0 5px;margin-left:4px;vertical-align:2px}
 .rzd-sub{font-size:11px;color:var(--dim,#777);margin-top:2px}
 .rzd-chip{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1.5px;border:1px solid;border-radius:6px;padding:3px 7px;flex-shrink:0;white-space:nowrap}
 .rzd-alert{margin-top:10px;background:rgba(255,179,0,.08);border:1px solid rgba(255,179,0,.3);border-radius:8px;padding:7px 10px;font-size:12px;color:#FFB300;line-height:1.5}
 .rzd-stats{display:flex;gap:6px;margin-top:10px}
-.rzd-st{flex:1;background:#0c0c0c;border:1px solid var(--s4,#222);border-radius:8px;padding:8px 2px 6px;text-align:center}
+.rzd-st{flex:1;background:rgba(0,0,0,.38);border:1px solid rgba(var(--pcr,255,179,0),.22);border-radius:8px;padding:8px 2px 6px;text-align:center}
 .rzd-st b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;color:#fff}
 .rzd-st span{display:block;font-size:9px;letter-spacing:1.2px;color:var(--dim,#777);margin-top:3px}
 .rzd-cal{display:flex;gap:14px;align-items:center;margin-top:12px}
 .rzd-gl,.rzd-g{display:grid;grid-template-columns:repeat(7,15px);gap:3px}
 .rzd-gl i{font-style:normal;font-size:9px;color:var(--dim,#777);text-align:center;margin-bottom:2px}
-.rzd-d{width:15px;height:15px;border-radius:3px;background:#1d1d1d}
-.rzd-d.d{background:#00C853}
+.rzd-d{width:15px;height:15px;border-radius:3px;background:rgba(0,0,0,.35)}
+.rzd-d.d{background:var(--pc,#00C853)}
 .rzd-d.f{background:transparent;border:1px dashed #2a2a2a;box-sizing:border-box}
 .rzd-d.t{box-shadow:0 0 0 1.5px #FFB300}
 .rzd-calinfo{font-size:12px;color:#ddd;line-height:1.5;min-width:0}
@@ -2764,7 +2764,7 @@ body.rzm-open #scroll-area{overflow:hidden}
 .rzd-lv b{color:#fff}
 .rzd-lv small{display:block;color:var(--dim,#777);font-size:11px;margin-top:1px}
 .rzd-pill{display:inline-block;font-size:11px;border:1px solid;border-radius:6px;padding:0 6px;margin-left:8px}
-.rzd-det{margin-top:12px;border-top:1px solid var(--s4,#222);padding-top:2px}
+.rzd-det{margin-top:12px;border-top:1px solid rgba(var(--pcr,255,179,0),.25);padding-top:2px}
 .rzd-h{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:2.5px;color:var(--dim,#777);margin:12px 0 4px}
 .rzd-li{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:#ddd;padding:5px 0;border-bottom:1px solid #1b1b1b}
 .rzd-li span{min-width:0;overflow-wrap:anywhere}
@@ -11401,7 +11401,7 @@ if (RZ.session && RZ.member) rzmLoad();
    - Réservé à l'admin (bouton caché + refus dans rzdOpen + RLS côté serveur)
 ══════════════════════════════════════════════════════════════════ */
 var RZD = { open: false, loading: false, data: null, at: 0, err: '', exp: {}, tok: 0 };
-var RZD_KEYS = ['cal-done-v1', 'records-v1', 'weight-log-v1', 'nutri-meals-v1', 'nutri-profile-v1'];
+var RZD_KEYS = ['cal-done-v1', 'records-v1', 'weight-log-v1', 'nutri-meals-v1', 'nutri-profile-v1', 'forge-theme-v1'];
 var RZD_MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 
 function rzdIsAdmin() { return !!(RZ.member && RZ.member.is_admin); }
@@ -11445,6 +11445,9 @@ function rzdDayType(key) {                       // même règle que getDayType(
 
 /* ── Calcul des chiffres d'un profil à partir de ses lignes cloud ─────────
    rows = { 'cal-done-v1': {value, updated_at}, … }   (pur : aucune lecture du DOM) */
+/* #RRGGBB → "r,g,b" (la couleur vient de la base : on ne garde que ce qui est strictement un code hexadécimal) */
+function rzdRgb(hex) { var n = parseInt(hex.slice(1), 16); return ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255); }
+
 function rzdCompute(p, rows, now, extra) {
   now = now || new Date(); extra = extra || {};
   var tk = rzdKey(now), tn = rzdDN(tk);
@@ -11456,6 +11459,10 @@ function rzdCompute(p, rows, now, extra) {
   c.lastAt = lastAt || null;
   c.seenAt = extra.seenAt ? Date.parse(extra.seenAt) || null : null;
   c.hasAccount = !!extra.hasAccount;
+  // couleur de thème choisie par la personne (sinon la couleur par défaut de son profil)
+  var th = rzdJ(rows['forge-theme-v1'] && rows['forge-theme-v1'].value, null), dflt = (PROFILE_CONFIG[p] && PROFILE_CONFIG[p].color) || '#FFB300';
+  c.color = (th && typeof th.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(th.color)) ? th.color : dflt;
+  c.rgb = rzdRgb(c.color);
   c.refAt = Math.max(c.lastAt || 0, c.seenAt || 0) || null;
 
   // séances validées (calendrier)
@@ -11636,12 +11643,12 @@ function rzdSpark(series) {
 
 function rzdCard(c) {
   var cfg = PROFILE_CONFIG[c.p], st = rzdStatus(c), me = (c.p === 'mathieu');
-  var h = '<div class="rzd-card" id="rzd-card-' + c.p + '">';
+  var h = '<div class="rzd-card" id="rzd-card-' + c.p + '" style="--pc:' + c.color + ';--pcr:' + c.rgb + '">';
   var act = [];
   if (c.lastAt) act.push('Données ' + rzdAgoTs(c.lastAt));
   if (c.seenAt) act.push('app ouverte ' + rzdAgoTs(c.seenAt));
   if (!act.length) act.push(c.hasAccount ? 'Compte créé, rien reçu pour l’instant' : 'Pas encore de compte');
-  h += '<div class="rzd-top"><div class="profile-avatar rz-av" style="background:' + cfg.color + '">' + cfg.initial + '</div>'
+  h += '<div class="rzd-top"><div class="profile-avatar rz-av" style="background:' + c.color + '">' + cfg.initial + '</div>'
     + '<div class="rzd-who"><div class="rzd-name">' + rzEsc(cfg.name) + (me ? ' <span class="rzd-me">TOI</span>' : '') + '</div>'
     + '<div class="rzd-sub">' + rzEsc(act.join(' · ')) + '</div></div>'
     + '<div class="rzd-chip" style="color:' + st.col + ';border-color:' + st.col + '">' + st.t + '</div></div>';
