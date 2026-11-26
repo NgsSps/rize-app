@@ -8983,7 +8983,7 @@ function renderWeightCard() {
   var trendEl=document.getElementById('home-weight-trend');
   var remEl=document.getElementById('home-weight-reminder');
   if (!entries.length){
-    if(valEl)valEl.innerHTML='-- <span>kg</span>';
+    if(valEl)valEl.textContent='--';
     if(subEl)subEl.textContent='Aucune mesure';
     if(card)card.classList.add('needs-weigh');
     if(remEl)remEl.style.display='flex';
@@ -8991,7 +8991,7 @@ function renderWeightCard() {
   }
   var sorted=entries.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
   var last=sorted[0], days=Math.round((new Date(today)-new Date(last.date))/86400000);
-  if(valEl)valEl.innerHTML=last.weight+' <span style="font-size:13px;color:var(--dim)">kg</span>';
+  if(valEl)valEl.textContent=last.weight;
   if(last.date===today){if(subEl)subEl.textContent='Pese ce matin';if(card)card.classList.remove('needs-weigh');if(remEl)remEl.style.display='none';}
   else{if(subEl)subEl.textContent='Il y a '+days+' jour'+(days>1?'s':'');if(card)card.classList.toggle('needs-weigh',days>=2);if(remEl)remEl.style.display=days>=1?'flex':'none';}
   var weekAgo=sorted.find(function(e){return Math.round((new Date(last.date)-new Date(e.date))/86400000)>=6;});
