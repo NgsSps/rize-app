@@ -78,3 +78,32 @@ self.addEventListener('fetch', e => {
     })
   );
 });
+
+/* ── Notifications push (message reçu) ─────────────────────────────
+   Le serveur envoie {title, body, tag, url}. Sur iPhone, chaque push DOIT afficher une notification. */
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; }
+  catch (_) { try { d = { body: e.data.text() }; } catch (__) { d = {}; } }
+  e.waitUntil(self.registration.showNotification(d.title || 'RIZE', {
+    body: d.body || '',
+    icon: '/rize-app/icon-192.png',
+    badge: '/rize-app/icon-192.png',
+    tag: d.tag || 'rize',
+    renotify: true,
+    data: { url: d.url || '/rize-app/' },
+  }));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/rize-app/';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) {
+        if (c.url.indexOf('/rize-app/') >= 0 && 'focus' in c) return c.focus();
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});

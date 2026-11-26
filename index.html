@@ -11361,6 +11361,7 @@ function rzmSend() {
     if (res.error) { rzmErr(rzErrFr(res.error)); return; }
     ta.value = ''; ta.style.height = ''; RZM.stick = true; rzmErr('');
     if (res.data && res.data.id) { RZM.list.push(res.data); RZM.seen[res.data.id] = 1; }
+    if (res.data && res.data.id) { try { if (typeof rzpNotify === 'function') rzpNotify(res.data.id); } catch(e) {} }
     rzmRenderPanel(); rzmUpdateBadges();
   }, function(e) {
     RZM.sending = false; btn.disabled = false; btn.textContent = 'ENVOYER';
@@ -12518,6 +12519,255 @@ function pgOnTab(tab) {
   var _filter = rzApplyProfileFilter;
   rzApplyProfileFilter = function() { var r = _filter.apply(this, arguments); try { pgRefreshBars(); } catch (e) {} return r; };
 })();
+</script>
+<script>
+/* ════════════════════════════════════════════════════════════
+   RIZE NOTIFICATIONS — une notification sur le téléphone quand un message arrive
+   • Paramètres → NOTIFICATIONS : activer / tester / désactiver (par téléphone)
+   • L'abonnement est enregistré dans Supabase (push_subscribe) ; l'envoi est fait par
+     la fonction « push-notify » appelée juste après l'envoi d'un message (rzpNotify).
+   • La réception est gérée par le service worker (sw.js : push + notificationclick).
+═════════════════════════════════════════════════════════════ */
+var RZP_VAPID = 'BHgNPuhRtQ8HiNy99ivAgkBxMR8ibguu_w_Twj6PTr-Hr2sqKGXXZ7mwxAUjk9ucYoAzPZs2YFrhc_p30bUq7Ow';  // clé PUBLIQUE (la privée reste dans Supabase)
+var RZP_FN    = 'push-notify';
+var RZP = { busy: false, say: '', sayOk: true, synced: '' };
+
+/* ── Petits outils ───────────────────────────────────────────── */
+function rzpB64ToU8(b64) {
+  var pad = '='.repeat((4 - b64.length % 4) % 4);
+  var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  var out = new Uint8Array(raw.length);
+  for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+function rzpU8ToB64(buf) {
+  var u = new Uint8Array(buf), s = '';
+  for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function rzpIsIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function rzpStandalone() {
+  return navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+function rzpSupported() {
+  return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+}
+function rzpTimeout(p, ms, label) {
+  return new Promise(function(res, rej) {
+    var t = setTimeout(function() { var e = new Error(label || 'timeout'); e.rzp = label || 'timeout'; rej(e); }, ms);
+    Promise.resolve(p).then(function(v) { clearTimeout(t); res(v); }, function(e) { clearTimeout(t); rej(e); });
+  });
+}
+function rzpGetSub() {
+  if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+  return navigator.serviceWorker.getRegistration().then(function(reg) {
+    return reg && reg.pushManager ? reg.pushManager.getSubscription() : null;
+  });
+}
+function rzpErrText(e) {
+  var m = (e && e.message) || String(e || '');
+  if (e && e.rzp === 'sw') return 'Le service worker ne répond pas. Ferme complètement l’app, rouvre-la, et réessaie.';
+  if (e && e.rzp === 'perm') return 'Autorisation non accordée.';
+  if (/Could not find the function|schema cache|PGRST202|push_subscribe/i.test(m)) return 'Le serveur n’est pas prêt : le script SQL de l’étape 3 n’a pas été exécuté.';
+  if (e && e.name === 'NotAllowedError') return 'Autorisation refusée. Réglages iPhone → Notifications → RIZE.';
+  if (typeof rzErrFr === 'function') return rzErrFr(e);
+  return m;
+}
+
+/* ── État du téléphone ───────────────────────────────────────── */
+function rzpState() {
+  if (!RZ.session || !RZ.sb) return Promise.resolve('login');
+  if (rzpIsIOS() && !rzpStandalone()) return Promise.resolve('install');
+  if (!rzpSupported()) return Promise.resolve('unsupported');
+  if (Notification.permission === 'denied') return Promise.resolve('denied');
+  if (Notification.permission !== 'granted') return Promise.resolve('off');
+  return rzpGetSub().then(function(s) { return s ? 'on' : 'off'; }, function() { return 'off'; });
+}
+
+/* ── Interface (section injectée dans Paramètres) ────────────── */
+(function() {
+  if (document.getElementById('rzp-section')) return;
+  var st = document.createElement('style'); st.id = 'rzp-style';
+  st.textContent =
+    '#rzp-status{background:var(--s2);border:1px solid var(--s4);border-radius:10px;padding:12px 14px;margin-bottom:8px}' +
+    '.rzp-who{font-size:13px;color:var(--wht)}' +
+    '.rzp-st{font-size:11px;color:var(--dim);margin-top:3px;line-height:1.5}' +
+    '.rzp-say{font-size:11px;margin-top:8px;line-height:1.5;color:#E53935}' +
+    '.rzp-say.ok{color:var(--acc)}';
+  document.head.appendChild(st);
+  var modal = document.getElementById('backup-modal'); if (!modal) return;
+  var first = modal.querySelector('.backup-section'); if (!first) return;
+  var sec = document.createElement('div');
+  sec.className = 'backup-section'; sec.id = 'rzp-section';
+  sec.innerHTML =
+    '<div class="backup-sec-title">NOTIFICATIONS</div>' +
+    '<div id="rzp-status"><div class="rzp-who" id="rzp-who"></div><div class="rzp-st" id="rzp-st"></div><div class="rzp-say" id="rzp-say"></div></div>' +
+    '<div class="backup-btn" id="rzp-btn-on" onclick="rzpEnable()" style="display:none">' +
+      '<div class="backup-btn-icon">🔔</div><div class="backup-btn-info"><div class="backup-btn-name">ACTIVER LES NOTIFICATIONS</div>' +
+      '<div class="backup-btn-sub">Sur ce téléphone uniquement</div></div></div>' +
+    '<div class="backup-btn" id="rzp-btn-test" onclick="rzpTest()" style="display:none">' +
+      '<div class="backup-btn-icon">✅</div><div class="backup-btn-info"><div class="backup-btn-name">ENVOYER UNE NOTIFICATION TEST</div>' +
+      '<div class="backup-btn-sub">Vérifie que tout arrive bien</div></div></div>' +
+    '<div class="backup-btn" id="rzp-btn-off" onclick="rzpDisable()" style="display:none">' +
+      '<div class="backup-btn-icon">🔕</div><div class="backup-btn-info"><div class="backup-btn-name">DÉSACTIVER SUR CE TÉLÉPHONE</div>' +
+      '<div class="backup-btn-sub">Plus de notification ici</div></div></div>';
+  first.parentNode.insertBefore(sec, first.nextSibling);
+})();
+
+function rzpSay(txt, ok) {
+  RZP.say = txt || ''; RZP.sayOk = ok !== false;
+  var e = document.getElementById('rzp-say');
+  if (e) { e.textContent = RZP.say; e.className = 'rzp-say' + (RZP.sayOk ? ' ok' : ''); }
+}
+function rzpRefresh() {
+  var who = document.getElementById('rzp-who'), det = document.getElementById('rzp-st');
+  if (!who || !det) return Promise.resolve();
+  return rzpState().then(function(s) {
+    var T = {
+      login:       ['Non connecté', 'Connecte-toi à ton compte pour activer les notifications.'],
+      install:     ['À installer d’abord', 'Sur iPhone, ouvre RIZE depuis l’icône de l’écran d’accueil (Safari → Partager → Sur l’écran d’accueil), puis reviens ici.'],
+      unsupported: ['Non disponible', 'Ce navigateur ne gère pas les notifications. Sur iPhone il faut iOS 16.4 ou plus.'],
+      denied:      ['Bloquées', 'Réglages de l’iPhone → Notifications → RIZE → Autoriser les notifications. Puis reviens ici.'],
+      off:         ['Désactivées', 'Reçois une notification sur ce téléphone quand tu as un nouveau message.'],
+      on:          ['✓ Activées sur ce téléphone', 'Tu seras prévenu(e) à chaque nouveau message, même app fermée.']
+    }[s] || ['', ''];
+    who.textContent = T[0]; det.textContent = RZP.busy ? 'Un instant…' : T[1];
+    var show = function(id, v) { var el = document.getElementById(id); if (el) el.style.display = v ? 'flex' : 'none'; };
+    show('rzp-btn-on', s === 'off'); show('rzp-btn-test', s === 'on'); show('rzp-btn-off', s === 'on');
+    rzpSay(RZP.say, RZP.sayOk);
+    return s;
+  });
+}
+
+/* ── Abonnement ──────────────────────────────────────────────── */
+function rzpRegister(sub) {
+  var j = sub.toJSON ? sub.toJSON() : {};
+  var k = (j.keys && j.keys.p256dh) || (sub.getKey ? rzpU8ToB64(sub.getKey('p256dh')) : '');
+  var a = (j.keys && j.keys.auth)   || (sub.getKey ? rzpU8ToB64(sub.getKey('auth'))   : '');
+  return RZ.sb.rpc('push_subscribe', { e: sub.endpoint, k: k, a: a, ua: navigator.userAgent || '' }).then(function(res) {
+    if (res.error) throw res.error;
+    RZP.synced = (RZ.session && RZ.session.user && RZ.session.user.id) || '';
+  });
+}
+function rzpEnable() {
+  if (RZP.busy) return;
+  if (!RZ.session || !RZ.sb || !rzpSupported()) { rzpRefresh(); return; }
+  RZP.busy = true; rzpSay('', true); rzpRefresh();
+  var perm;
+  try { perm = Notification.requestPermission(); } catch (e) { perm = Promise.resolve('denied'); }   // doit partir directement du clic
+  Promise.resolve(perm).then(function(p) {
+    if (p !== 'granted') { var er = new Error('perm'); er.rzp = 'perm'; throw er; }
+    return rzpTimeout(navigator.serviceWorker.ready, 8000, 'sw');
+  }).then(function(reg) {
+    var opts = { userVisibleOnly: true, applicationServerKey: rzpB64ToU8(RZP_VAPID) };
+    return reg.pushManager.subscribe(opts).catch(function(e) {
+      if (e && e.name === 'InvalidStateError') {     // ancien abonnement avec une autre clé → on repart propre
+        return reg.pushManager.getSubscription().then(function(old) { return old ? old.unsubscribe() : null; })
+          .then(function() { return reg.pushManager.subscribe(opts); });
+      }
+      throw e;
+    });
+  }).then(rzpRegister).then(function() {
+    RZP.busy = false;
+    rzpSay('Notifications activées ✅ Touche « Envoyer une notification test » pour vérifier.', true);
+    rzpRefresh();
+  }, function(e) {
+    RZP.busy = false;
+    rzpSay(rzpErrText(e), false);
+    rzpRefresh();
+  });
+}
+function rzpDisable() {
+  if (RZP.busy) return;
+  RZP.busy = true; rzpSay('', true); rzpRefresh();
+  rzpGetSub().then(function(sub) {
+    if (!sub) return null;
+    var done = function() { return sub.unsubscribe(); };
+    return rzpTimeout(RZ.sb.rpc('push_unsubscribe', { e: sub.endpoint }), 5000, 'net').then(done, done);
+  }).then(function() {
+    RZP.busy = false; rzpSay('Notifications désactivées sur ce téléphone.', true); rzpRefresh();
+  }, function(e) {
+    RZP.busy = false; rzpSay(rzpErrText(e), false); rzpRefresh();
+  });
+}
+
+/* ── Envoi ───────────────────────────────────────────────────── */
+function rzpInvoke(body) {
+  return RZ.sb.functions.invoke(RZP_FN, { body: body });
+}
+/* Appelée juste après l'envoi d'un message : le serveur décide qui prévenir. Jamais bloquant. */
+function rzpNotify(id) {
+  try {
+    if (!RZ.sb || !RZ.session || !id) return;
+    rzpInvoke({ id: id }).then(function() {}, function() {});
+  } catch (e) {}
+}
+function rzpExplain(err) {
+  var st = err && err.context && err.context.status;
+  var p = (err && err.context && typeof err.context.json === 'function') ? err.context.json().catch(function() { return null; }) : Promise.resolve(null);
+  return p.then(function(j) {
+    var m = (j && j.error) || '';
+    if (st === 404) return 'La fonction d’envoi « ' + RZP_FN + ' » n’est pas installée sur Supabase (étape 2 du guide).';
+    if (st === 500 && /VAPID/i.test(m)) return 'Les clés VAPID ne sont pas enregistrées dans les secrets de la fonction (étape 3 du guide).';
+    if (st === 401) return 'Refusé par le serveur. Si « Verify JWT » est activé sur la fonction, désactive-le ; sinon déconnecte-toi puis reconnecte-toi.';
+    if (err && /Fetch/i.test(err.name || '')) return 'Impossible de joindre la fonction d’envoi (pas de réseau ou fonction absente).';
+    return 'Erreur serveur' + (st ? ' (' + st + ')' : '') + (m ? ' : ' + m : '') + '.';
+  });
+}
+function rzpTest() {
+  if (RZP.busy) return;
+  RZP.busy = true; rzpSay('Envoi du test…', true); rzpRefresh();
+  rzpInvoke({ test: true }).then(function(res) {
+    if (res.error) return rzpExplain(res.error).then(function(t) { return { ok: false, t: t }; });
+    var d = res.data || {};
+    if (d.sent > 0) return { ok: true, t: 'Test envoyé ✅ La notification arrive dans quelques secondes (app fermée ou en arrière-plan, c’est plus parlant).' };
+    if (d.failed && d.failed.length) {
+      var f = d.failed[0];
+      return { ok: false, t: 'Le service de notifications du téléphone a refusé l’envoi (code ' + f.status + ').' +
+        (f.status === 403 || f.status === 401 || f.status === 400 ? ' Vérifie que les 3 secrets VAPID sont corrects.' : '') };
+    }
+    return { ok: false, t: 'Ce téléphone n’est pas enregistré côté serveur. Désactive puis réactive les notifications.' };
+  }, function(e) {
+    return { ok: false, t: rzpErrText(e) };
+  }).then(function(r) {
+    RZP.busy = false; rzpSay(r.t, r.ok); rzpRefresh();
+  });
+}
+
+/* ── Branchements ────────────────────────────────────────────── */
+// À l'ouverture des Paramètres : on met le bloc à jour
+var _rzpOrigOpenBackup = openBackup;
+openBackup = function() {
+  _rzpOrigOpenBackup.apply(this, arguments);
+  RZP.say = '';
+  try { rzpRefresh(); } catch (e) {}
+};
+
+// À la déconnexion du compte : ce téléphone ne doit plus recevoir les notifications de ce compte
+var _rzpOrigSignOut = rzSignOut;
+rzSignOut = function() {
+  var go = function() { _rzpOrigSignOut(); };
+  if (!rzpSupported()) { go(); return; }
+  rzpGetSub().then(function(sub) {
+    if (!sub) return null;
+    var local = function() { return sub.unsubscribe(); };
+    var rpc = (RZ.sb && RZ.session) ? rzpTimeout(RZ.sb.rpc('push_unsubscribe', { e: sub.endpoint }), 1500, 'net') : Promise.resolve();
+    return rpc.then(local, local);
+  }).then(go, go);
+};
+
+// Chaque ouverture de l'app : si les notifications sont déjà autorisées, on (ré)enregistre le téléphone pour ce compte
+setInterval(function() {
+  try {
+    if (!RZ.session || !RZ.sb || RZP.busy || !rzpSupported()) return;
+    var uid = (RZ.session.user && RZ.session.user.id) || '';
+    if (!uid || RZP.synced === uid || Notification.permission !== 'granted') return;
+    RZP.synced = uid;       // une seule tentative par ouverture (le bouton Paramètres permet de réessayer)
+    rzpGetSub().then(function(sub) { if (sub) return rzpRegister(sub); }).catch(function() {});
+  } catch (e) {}
+}, 4000);
 </script>
 </body>
 </html>
