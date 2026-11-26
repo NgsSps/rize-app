@@ -591,6 +591,9 @@ body{
 .day-badge.match{background:rgba(255,179,0,.12);color:#FFB300;border:1px solid rgba(255,179,0,.3)}
 .day-badge.rest{background:rgba(100,100,100,.1);color:var(--dim);border:1px solid var(--s4)}
 .day-badge.opt{background:rgba(100,149,237,.1);color:#6495ED;border:1px solid rgba(100,149,237,.25)}
+.day-badge.piscine{background:rgba(0,188,212,.12);color:#00BCD4;border:1px solid rgba(0,188,212,.3)}
+.day-badge.danse{background:rgba(224,64,251,.12);color:#E040FB;border:1px solid rgba(224,64,251,.3)}
+.day-badge.course{background:rgba(255,112,67,.12);color:#FF7043;border:1px solid rgba(255,112,67,.3)}
 .day-detail{
   padding:0 14px 11px;
   font-size:11.5px;color:var(--dim);line-height:1.6;
@@ -2000,6 +2003,7 @@ body{height:100%;height:-webkit-fill-available;overflow:hidden}
 .planning-edit-sheet{
   background:var(--s1);border-radius:16px 16px 0 0;
   width:100%;max-width:480px;padding:20px 16px 40px;
+  max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
 }
 .planning-edit-title{
   font-family:'Bebas Neue',sans-serif;font-size:18px;
@@ -4254,6 +4258,9 @@ body.rzd-open #scroll-area{overflow:hidden}
         <span class="day-badge gym-b">💪 Bras/Pecs</span>
         <span class="day-badge foot">⚽ Foot</span>
         <span class="day-badge match">🏆 Match</span>
+        <span class="day-badge piscine">🏊 Piscine</span>
+        <span class="day-badge danse">💃 Danse</span>
+        <span class="day-badge course">🏃 Course</span>
         <span class="day-badge opt">✦ Optionnel</span>
       </div>
     </div>
@@ -7527,7 +7534,7 @@ function validateFootDay() {
   if (current === 'planning') calRender();
   if (current === 'home') renderHome();
   if (!wasValidated) {
-    showToast('⚽ Entraînement validé !');
+    showToast('✅ Séance validée !');
     try { navigator.vibrate && navigator.vibrate([50, 80, 150]); } catch(e) {}
   }
 }
@@ -7730,6 +7737,9 @@ var SESSION_OPTIONS = [
   { key:'foot',   emoji:'\u26BD',        name:'Foot',           sub:'Entraînement ou match',               tab:null,     color:'#2979FF', accr:'41,121,255',  duration:'Terrain'      },
   { key:'libre',  emoji:'\u2746',        name:'Séance Libre', sub:'Exercices personnalisés',          tab:'libre',  color:'#FFB300', accr:'255,179,0',   duration:'Libre'        },
   { key:'match',  emoji:'\uD83C\uDFC6',        name:'Match',          sub:'Jour de compétition',                 tab:null,     color:'#FFD600', accr:'255,214,0',   duration:'Match'        },
+  { key:'piscine', emoji:'\uD83C\uDFCA', name:'Piscine',        sub:'Natation',                            tab:null,     color:'#00BCD4', accr:'0,188,212',   duration:'Natation'     },
+  { key:'danse',   emoji:'\uD83D\uDC83', name:'Danse',          sub:'Cours ou entraînement',               tab:null,     color:'#E040FB', accr:'224,64,251',  duration:'Danse'        },
+  { key:'course',  emoji:'\uD83C\uDFC3', name:'Course',         sub:'Footing · Running',                   tab:null,     color:'#FF7043', accr:'255,112,67',  duration:'Endurance'    },
   { key:'repos',  emoji:'\u2744',        name:'Repos',          sub:'Récupération',                   tab:null,     color:'#6495ED', accr:'100,149,237', duration:'Récupération' },
 ];
 
@@ -8271,13 +8281,16 @@ function isTrainingDay() {
   return getDayType() !== 'repos';
 }
 
+// Jour « activité » = séance hors salle (foot, match, piscine, danse, course…), donc tout sauf une séance de salle et Repos.
+// En interne le type garde le nom 'foot' (mêmes besoins nutritionnels qu'avant).
 function getDayType() {
   if (manqueeLoad()) return 'repos';
   var dow   = new Date().getDay();
-  if (dow === 6) return 'repos'; // Samedi = repos par défaut
   var sched = HOME_SCHEDULE[dow];
+  var activite = !!sched && sched.tab === null && sched.label !== 'Repos';
+  if (dow === 6) return activite ? 'foot' : 'repos'; // Samedi = repos par défaut, sauf activité prévue
   if (!sched) return 'repos';
-  if (sched.tab === null && (sched.label.indexOf('Foot')!==-1||sched.label.indexOf('Match')!==-1)) return 'foot';
+  if (activite) return 'foot';
   if (sched.tab !== null) return 'muscu'; // jour gym
   return 'repos';
 }
@@ -8292,7 +8305,7 @@ function renderNutri() {
   if (badge) {
     var lbl  = sched ? sched.label : 'Repos';
     var col  = {muscu:'#00C853', foot:'#2979FF', repos:'#6495ED'}[dayType] || '#6495ED';
-    var icon = {muscu:'\uD83C\uDFCB', foot:'\u26BD', repos:'\uD83D\uDE34'}[dayType] || '';
+    var icon = (dayType === 'foot' && sched && sched.emoji) ? sched.emoji : ({muscu:'\uD83C\uDFCB', foot:'\u26BD', repos:'\uD83D\uDE34'}[dayType] || '');
     badge.textContent = icon + ' ' + lbl;
     var rgb = {muscu:'0,200,83', foot:'41,121,255', repos:'100,149,237'}[dayType] || '100,149,237';
     badge.style.cssText='background:rgba('+rgb+',.15);color:'+col+';border:1px solid '+col+';border-radius:20px;padding:3px 10px;font-size:11px;font-family:Bebas Neue,sans-serif;letter-spacing:1.5px';
@@ -9495,7 +9508,7 @@ function planningGetSchedule() {
 function planningGetSession(dow) {
   var schedule = planningGetSchedule();
   var key = schedule[dow];
-  return SESSION_OPTIONS.find(function(s){ return s.key === key; }) || SESSION_OPTIONS[6]; // repos par défaut
+  return SESSION_OPTIONS.find(function(s){ return s.key === key; }) || SESSION_OPTIONS.find(function(s){ return s.key === 'repos'; }); // repos par défaut
 }
 
 /* Mettre à jour HOME_SCHEDULE dynamiquement */
@@ -11398,10 +11411,10 @@ function rzdAgoDays(n) { return n <= 0 ? 'aujourd’hui' : n === 1 ? 'hier' : 'i
 function rzdNameFromKey(k) { return String(k).replace(/^wt-[A-Za-z0-9]+-/, '').replace(/_+/g, ' ').trim() || String(k); }
 function rzdDayType(key) {                       // même règle que getDayType(), sans le « manqué » de la personne
   var a = String(key).split('-'), dow = new Date(+a[0], +a[1] - 1, +a[2]).getDay();
-  if (dow === 6) return 'repos';
   var s = (typeof HOME_SCHEDULE !== 'undefined') ? HOME_SCHEDULE[dow] : null;
+  if (dow === 6) return (s && s.tab === null && s.label !== 'Repos') ? 'foot' : 'repos';
   if (!s) return 'repos';
-  if (s.tab === null && (s.label.indexOf('Foot') !== -1 || s.label.indexOf('Match') !== -1)) return 'foot';
+  if (s.tab === null && s.label !== 'Repos') return 'foot';   // activité hors salle (foot, match, piscine, danse, course…)
   if (s.tab !== null) return 'muscu';
   return 'repos';
 }
@@ -11694,7 +11707,7 @@ function rzdRender() {
       + '<div><b>' + rn + '</b><span>RECORDS (30 J)</span></div></div>';
     if (RZD.err) h += '<div class="rz-msg" style="margin:0 0 8px">' + rzEsc(RZD.err) + ' — chiffres du dernier chargement.</div>';
     D.forEach(function(c) { h += rzdCard(c); });
-    h += '<div class="rzd-foot">Mis à jour ' + (RZD.loading ? 'en cours…' : rzdAgoTs(RZD.at)) + ' · lecture seule · « jours validés » = cases cochées du calendrier (séances, foot, match).</div>';
+    h += '<div class="rzd-foot">Mis à jour ' + (RZD.loading ? 'en cours…' : rzdAgoTs(RZD.at)) + ' · lecture seule · « jours validés » = cases cochées du calendrier (séances et activités).</div>';
   }
   el.innerHTML = h;
   el.scrollTop = top;
