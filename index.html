@@ -2140,12 +2140,12 @@ body.modal-open #nav { display:none !important; }
 .login-logo {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 64px; letter-spacing: 8px;
-  color: #fff; line-height: 1; margin-bottom: 6px;
+  color: #fff; line-height: 1; margin-bottom: 6px; padding-left: 8px;
 }
 .login-logo span { color: #00C853 }
 .login-tagline {
   font-size: 11px; color: #555; letter-spacing: 2px;
-  text-transform: uppercase; margin-bottom: 50px; text-align: center;
+  text-transform: uppercase; margin-bottom: 50px; text-align: center; padding-left: 2px;
 }
 
 /* Sélection profil */
@@ -2153,12 +2153,13 @@ body.modal-open #nav { display:none !important; }
 .profile-select-title {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 11px; letter-spacing: 3px; color: #444;
-  text-align: center; margin-bottom: 16px;
+  text-align: center; margin-bottom: 16px; padding-left: 3px;
 }
 .profile-cards {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;
 }
 .profile-card {
+  flex: 0 0 calc((100% - 24px) / 3); box-sizing: border-box; min-width: 0;
   background: #111; border: 1px solid #222;
   border-radius: 14px; padding: 16px 8px;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -2176,6 +2177,10 @@ body.modal-open #nav { display:none !important; }
   font-family: 'Bebas Neue', sans-serif; font-size: 13px;
   letter-spacing: 1px; color: #fff;
 }
+/* Un seul profil (cas normal) : carte plus grande, centrée */
+.profile-cards.single .profile-card { flex: 0 0 160px; padding: 24px 12px; gap: 12px }
+.profile-cards.single .profile-avatar { width: 68px; height: 68px; font-size: 28px }
+.profile-cards.single .profile-name { font-size: 16px; letter-spacing: 2px }
 
 /* PIN */
 .pin-screen { width: 100%; max-width: 320px; display: none }
@@ -10733,6 +10738,12 @@ function rzApplyProfileFilter() {
     var ok = !m || m.profile_id === mt[1] || (m.is_admin && !m.profile_id);
     card.style.display = ok ? '' : 'none';
   });
+  var wrap = document.querySelector('#profile-select-view .profile-cards');
+  if (wrap) {
+    var nbCards = 0;
+    wrap.querySelectorAll('.profile-card').forEach(function(c) { if (c.style.display !== 'none') nbCards++; });
+    wrap.classList.toggle('single', nbCards === 1);
+  }
   var adm = rzEl('rz-admin-btn');
   if (adm) adm.style.display = (m && m.is_admin) ? '' : 'none';
   var dsh = rzEl('rz-dash-btn');
