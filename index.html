@@ -877,6 +877,9 @@ body{
 }
 .cal-mini-title span{color:#FFB300}
 .cal-mini-sub{font-size:11.5px;color:var(--dim);margin-top:4px}
+/* titres des pages Tableau de bord / Admin : plus longs que « CALENDRIER », on réduit sur petit écran */
+.pg-title{font-size:28px}
+@media (max-width:350px){.pg-title{font-size:23px;letter-spacing:1px}}
 
 /* Weight dans focus mode */
 .focus-weight-row{
@@ -2651,12 +2654,10 @@ body.modal-open #nav { display:none !important; }
 .rz-text b{color:#fff}
 .rz-spin{width:28px;height:28px;border:3px solid #222;border-top-color:#00C853;border-radius:50%;margin:20px auto;animation:rzspin 1s linear infinite}
 @keyframes rzspin{to{transform:rotate(360deg)}}
-#rz-admin{position:fixed;inset:0;z-index:10040;background:rgba(0,0,0,.75);display:none;align-items:flex-end;justify-content:center}
-#rz-admin.show{display:flex}
 .rz-sheet{width:100%;max-width:520px;max-height:88vh;overflow-y:auto;background:var(--s1,#0f0f0f);border-top:1px solid #FFB300;
   border-radius:18px 18px 0 0;padding:0 0 30px;padding-bottom:env(safe-area-inset-bottom,30px)}
 .rz-sheet-title{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#FFB300;letter-spacing:1px;padding:16px;border-bottom:1px solid var(--s4,#222)}
-#rz-admin-body{padding:0 16px}
+#rz-admin-body{padding:4px 16px calc(30px + env(safe-area-inset-bottom,0px))}
 .rz-sec{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:3px;color:var(--dim,#777);margin:16px 0 8px}
 .rz-row{display:flex;align-items:center;gap:10px;background:var(--s2,#151515);border:1px solid var(--s4,#222);border-radius:10px;padding:10px 12px;margin-bottom:8px}
 .rz-row-main{flex:1;min-width:0}
@@ -2726,20 +2727,10 @@ body.rzm-open #scroll-area{overflow:hidden}
 #rzm-err:empty{display:none}
 
 /* ══ TABLEAU DE BORD ADMIN ══ */
-#rzd-panel{position:fixed;inset:0;z-index:10042;background:rgba(0,0,0,.75);display:none;align-items:flex-end;justify-content:center;overscroll-behavior:contain}
-#rzd-panel.show{display:flex}
-body.rzd-open #scroll-area{overflow:hidden}
-.rzd-sheet{width:100%;max-width:520px;height:94%;max-height:100%;display:flex;flex-direction:column;background:var(--s1,#0f0f0f);
-  border-top:1px solid #FFB300;border-radius:18px 18px 0 0;overflow:hidden}
-.rzd-title{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;font-family:'Bebas Neue',sans-serif;font-size:19px;
-  color:#FFB300;letter-spacing:1px;padding:12px 4px 4px 16px;white-space:nowrap;gap:4px}
-.rzd-tb{display:flex;align-items:center;flex-shrink:0}
 .rzd-x{font-size:13px;color:var(--dim,#777);cursor:pointer;letter-spacing:1.5px;padding:12px 12px;white-space:nowrap}
-.rzd-x.cl{font-size:20px;padding:8px 16px 8px 10px;line-height:1;color:#aaa}
 .rzd-x.rf{display:inline-block;font-size:22px;color:#FFB300;padding:8px 12px;line-height:1}
 .rzd-x.rf.spin{animation:rzspin 1s linear infinite}
-#rzd-body{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
-  padding:6px 14px calc(18px + env(safe-area-inset-bottom,0px))}
+#rzd-body{padding:14px 14px calc(30px + env(safe-area-inset-bottom,0px))}
 .rzd-sum{display:flex;gap:8px;margin:4px 0 12px}
 .rzd-sum>div{flex:1;background:var(--s2,#151515);border:1px solid var(--s4,#222);border-radius:10px;padding:9px 4px;text-align:center}
 .rzd-sum b{display:block;font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;color:#FFB300;letter-spacing:1px}
@@ -2937,22 +2928,6 @@ body.rzd-open #scroll-area{overflow:hidden}
   </div>
 </div>
 
-<!-- ══ RIZE TABLEAU DE BORD (admin) ══ -->
-<div id="rzd-panel" onclick="if(event.target===this)rzdClose()">
-  <div class="rzd-sheet">
-    <div class="rzd-title">&#x1F4CA; TABLEAU DE BORD <span class="rzd-tb"><span class="rzd-x rf" id="rzd-refresh" onclick="rzdRefresh()" title="Actualiser">&#x21BB;</span><span class="rzd-x cl" onclick="rzdClose()" title="Fermer">&#x2715;</span></span></div>
-    <div id="rzd-body"></div>
-  </div>
-</div>
-
-<!-- ══ RIZE CLOUD : panneau admin ══ -->
-<div id="rz-admin" onclick="if(event.target===this)rzCloseAdmin()">
-  <div class="rz-sheet">
-    <div class="rz-sheet-title">&#x1F451; ADMIN</div>
-    <div id="rz-admin-body"></div>
-    <button class="backup-close" onclick="rzCloseAdmin()">FERMER</button>
-  </div>
-</div>
 
 <div id="app-bg"></div>
 <div id="toast"></div>
@@ -3775,6 +3750,27 @@ body.rzd-open #scroll-area{overflow:hidden}
 
 <!-- ══ PAGE PLANNING ════════════════════════════════════ -->
 
+
+<!-- ══ TAB: TABLEAU DE BORD (admin) ══ -->
+<div class="tab-page" id="page-dashboard" data-tab="dashboard">
+  <div class="cal-mini-header">
+    <div class="cal-mini-tag">&#x1F4CA; ADMIN</div>
+    <div class="cal-mini-title pg-title">TABLEAU DE <span>BORD</span></div>
+    <div class="cal-mini-sub">Activit&eacute; de tous les profils &middot; lecture seule</div>
+    <span class="rzd-x rf" id="rzd-refresh" onclick="rzdRefresh()" title="Actualiser" style="position:absolute;top:10px;right:58px">&#x21BB;</span>
+  </div>
+  <div id="rzd-body"></div>
+</div>
+
+<!-- ══ TAB: ADMIN (profils, invitations, comptes) ══ -->
+<div class="tab-page" id="page-admin" data-tab="admin">
+  <div class="cal-mini-header">
+    <div class="cal-mini-tag">&#x1F451; ADMIN</div>
+    <div class="cal-mini-title pg-title">PROFILS &amp; <span>ACC&Egrave;S</span></div>
+    <div class="cal-mini-sub">Invitations par email &middot; Comptes &middot; Ouvrir un profil</div>
+  </div>
+  <div id="rz-admin-body"></div>
+</div>
 
 <!-- ══════════════════════════════════════════════════════
      TAB: PLANNING — CALENDRIER MENSUEL
@@ -4668,6 +4664,8 @@ const ACCENTS = {
   biblio:   { acc:'#A259FF', acc2:'#7B3FBE', r:'162,89,255',  label:'BIBLIOTHÈQUE' },
   home:     { acc:'#00C853',  acc2:'#007B33', r:'0,200,83',    label:'ACCUEIL' },
   libre:    { acc:'#FFB300',  acc2:'#E65100', r:'255,179,0',   label:'SÉANCE LIBRE' },
+  dashboard:{ acc:'#FFB300',  acc2:'#E65100', r:'255,179,0',   label:'TABLEAU DE BORD' },
+  admin:    { acc:'#FFB300',  acc2:'#E65100', r:'255,179,0',   label:'ADMIN' },
 };
 
 /* ══════════════════════════════════════════════════════
@@ -5310,7 +5308,7 @@ function switchTab(tab) {
   // Gardée uniquement sur les pages utilitaires : nutrition / planning / biblio
   var nav = document.getElementById('nav');
   var scr = document.getElementById('scroll-area');
-  var seancePages = ['home','jambes','back','bras','libre'];
+  var seancePages = ['home','jambes','back','bras','libre','dashboard','admin'];
   if (seancePages.indexOf(tab) !== -1) {
     if (nav) nav.classList.add('hidden');
     if (scr) scr.classList.add('no-nav');
@@ -10668,7 +10666,9 @@ function rzSyncNow() {
 
 /* Rafraîchir l'écran quand des données arrivent (jamais au milieu d'une action) */
 function rzOverlayOpen() {
-  if (document.querySelector('[id$="-modal"].show, [id$="-overlay"].show, #rz-admin.show, #rz-auth.show, #rzm-panel.show, #rzd-panel.show')) return true;
+  if (document.querySelector('[id$="-modal"].show, [id$="-overlay"].show, #rz-auth.show, #rzm-panel.show')) return true;
+  // Pages Tableau de bord / Admin : on ne recharge pas l'écran pendant qu'on les consulte (ça reprend dès qu'on les quitte)
+  if (typeof current !== 'undefined' && (current === 'dashboard' || current === 'admin')) return true;
   // Mode remplacement / ajout d'exercice en cours
   if (document.querySelector('#lib-replace-banner.show, #lib-add-banner.show')) return true;
   // L'utilisateur vient de toucher ou de faire défiler l'écran : on attend qu'il ait fini
@@ -10881,9 +10881,12 @@ function rzFmtAgo(d) {
 var RZ_ADMIN = { members: [], invites: {} };
 
 function rzOpenAdmin() {
-  var o = rzEl('rz-admin'); if (!o || !RZ.member || !RZ.member.is_admin) return;
-  o.classList.add('show');
-  rzEl('rz-admin-body').innerHTML = '<div class="rz-dim" style="padding:14px 0">Chargement…</div>';
+  var pg = rzEl('page-admin'); if (!pg || !RZ.member || !RZ.member.is_admin) return;
+  // Page « Admin ». Si on y est déjà (rechargement après un enregistrement), on garde l'affichage et le défilement.
+  if (typeof current === 'undefined' || current !== 'admin') {
+    switchTab('admin');
+    rzEl('rz-admin-body').innerHTML = '<div class="rz-dim" style="padding:14px 0">Chargement…</div>';
+  }
   Promise.all([
     RZ.sb.from('members').select('user_id,email,profile_id,is_admin,last_seen_at').order('created_at'),
     RZ.sb.from('invites').select('profile_id,email'),
@@ -10896,7 +10899,7 @@ function rzOpenAdmin() {
     (r[2].data || []).forEach(function(x) { if (!last[x.profile_id]) last[x.profile_id] = x.updated_at; });
     RZ_ADMIN.members = members; RZ_ADMIN.invites = invites;
 
-    var html = '<button class="rz-btn ghost" style="margin-top:14px" onclick="rzCloseAdmin();rzdOpen()">&#x1F4CA; TABLEAU DE BORD</button>';
+    var html = '<button class="rz-btn ghost" style="margin-top:14px" onclick="rzdOpen()">&#x1F4CA; TABLEAU DE BORD</button>';
     html += '<div class="rz-help">Mets l’email de chaque personne : quand elle crée son compte avec cet email, elle arrive directement dans son profil. Un email absent de cette liste n’a accès à rien.</div>';
     html += '<div class="rz-sec">PROFILS</div>';
     rzProfiles().forEach(function(p) {
@@ -10941,7 +10944,7 @@ function rzOpenAdmin() {
     rzEl('rz-admin-body').innerHTML = '<div class="rz-msg">' + rzEsc(rzErrFr(e)) + '</div>';
   });
 }
-function rzCloseAdmin() { var o = rzEl('rz-admin'); if (o) o.classList.remove('show'); }
+function rzCloseAdmin() { if (typeof current !== 'undefined' && current === 'admin') switchTab('home'); }
 
 function rzInvMsg(p, txt, ok) {
   var m = rzEl('rz-invmsg-' + p); if (!m) return;
@@ -11715,7 +11718,8 @@ function rzdCard(c) {
 
 function rzdRender() {
   var el = document.getElementById('rzd-body'); if (!el) return;
-  var top = el.scrollTop, h = '';
+  var sa = document.getElementById('scroll-area');
+  var top = sa ? sa.scrollTop : 0, h = '';
   if (RZD.err && !RZD.data) {
     h = '<div class="rz-msg" style="margin-top:24px">' + rzEsc(RZD.err) + '</div><div class="rzd-b" style="margin:10px auto;max-width:200px" onclick="rzdRefresh()">RÉESSAYER</div>';
   } else if (!RZD.data) {
@@ -11731,7 +11735,7 @@ function rzdRender() {
     h += '<div class="rzd-foot">Mis à jour ' + (RZD.loading ? 'en cours…' : rzdAgoTs(RZD.at)) + ' · lecture seule · « jours validés » = cases cochées du calendrier (séances et activités).</div>';
   }
   el.innerHTML = h;
-  el.scrollTop = top;
+  if (sa && typeof current !== 'undefined' && current === 'dashboard') sa.scrollTop = top;
   var rf = document.getElementById('rzd-refresh');
   if (rf) rf.classList.toggle('spin', !!RZD.loading);
 }
@@ -11751,18 +11755,26 @@ function rzdRefresh() {
 }
 function rzdOpen() {
   if (!rzdIsAdmin()) return;
-  var p = document.getElementById('rzd-panel'); if (!p) return;
+  if (!document.getElementById('page-dashboard')) return;
   RZD.open = true;
-  document.body.classList.add('rzd-open');
-  p.classList.add('show');
+  switchTab('dashboard');          // le tableau de bord est une page (retour par le bouton 🏠)
   rzdRender();
   if (!RZD.data || Date.now() - RZD.at > 60000) rzdRefresh();
 }
 function rzdClose() {
   RZD.open = false; RZD.tok++; RZD.loading = false;
-  document.body.classList.remove('rzd-open');
-  var p = document.getElementById('rzd-panel'); if (p) p.classList.remove('show');
+  if (typeof current !== 'undefined' && current === 'dashboard') switchTab('home');
 }
+/* quitter la page par n'importe quel chemin (bouton 🏠, nav…) : on annule le chargement en cours */
+(function() {
+  if (typeof switchTab !== 'function') return;
+  var orig = switchTab;
+  switchTab = function(tab) {
+    var r = orig.apply(this, arguments);
+    if (tab !== 'dashboard' && RZD.open) { RZD.open = false; RZD.tok++; RZD.loading = false; }
+    return r;
+  };
+})();
 function rzdToggle(p) { RZD.exp[p] = !RZD.exp[p]; rzdRender(); }
 function rzdOpenProfile(p) { rzdClose(); rzAdminOpenProfile(p); }
 function rzdMsg(p) { rzmOpen(p); }
