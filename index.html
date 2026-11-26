@@ -2671,7 +2671,8 @@ body.modal-open #nav { display:none !important; }
 .rz-st-who{font-size:13px;color:var(--wht)}
 .rz-st-state{font-size:11px;color:var(--dim);margin-top:3px}
 .rz-help{font-size:11px;color:var(--dim,#777);line-height:1.45;margin:14px 0 4px}
-.rz-card{background:var(--s2,#151515);border:1px solid var(--s4,#222);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.rz-card{--pc:#FFB300;--pcr:255,179,0;background:linear-gradient(150deg,rgba(var(--pcr),.20) 0%,rgba(var(--pcr),.07) 45%,var(--s2,#151515) 100%),var(--s2,#151515);border:1px solid rgba(var(--pcr),.40);border-left:5px solid var(--pc);border-radius:10px;padding:10px 12px 10px 11px;margin-bottom:10px}
+.rz-card .rz-email{color:var(--pc,#fff);font-size:15px;font-weight:600}
 .rz-card-top{display:flex;align-items:center;gap:10px}
 .rz-card-bot{display:flex;gap:8px;margin-top:8px}
 .rz-inv{margin:0!important;padding:9px 11px!important;font-size:14px!important;flex:1;min-width:0}
@@ -4652,6 +4653,47 @@ body.rzm-open #scroll-area{overflow:hidden}
 </div>
 
 
+<script>
+/* ════════════════════════════════════════════════════════════
+   RIZE PROGRAMME (1/2) — photo des séances d'origine
+   Doit s'exécuter AVANT le script principal : il ajoute ensuite des
+   boutons, des suivis de charges, etc. sur les cartes. On garde ici le
+   HTML « propre » de chaque carte pour pouvoir recomposer une séance.
+═════════════════════════════════════════════════════════════ */
+var PG_SNAP = (function() {
+  var out = {};
+  ['jambes', 'back', 'bras'].forEach(function(g) {
+    var page = document.getElementById('page-' + g);
+    if (!page) return;
+    var secEls = Array.prototype.slice.call(page.querySelectorAll(':scope > .section'));
+    var cards = [];
+    secEls.forEach(function(sec, si) {
+      var wraps = Array.prototype.slice.call(sec.querySelectorAll(':scope > .superset-wrap'));
+      Array.prototype.forEach.call(sec.querySelectorAll('.card'), function(c) {
+        var w = c.closest('.superset-wrap');
+        var tip = c.querySelector('.tip');
+        var rm = tip ? /Récup\s+(\d+)s/i.exec(tip.textContent) : null;
+        cards.push({
+          html: c.outerHTML,
+          sec: si,
+          ss: w ? wraps.indexOf(w) : -1,
+          name: (c.querySelector('.ex-name') || {}).textContent || '',
+          metrics: Array.prototype.map.call(c.querySelectorAll('.ex-metrics .metric-val'), function(x) { return x.textContent; }),
+          labels: Array.prototype.map.call(c.querySelectorAll('.ex-metrics .metric-label'), function(x) { return x.textContent; }),
+          rest: rm ? parseInt(rm[1], 10) : 0
+        });
+      });
+    });
+    var stat = null;
+    Array.prototype.forEach.call(page.querySelectorAll('.stats-row .stat'), function(s) {
+      var l = s.querySelector('.stat-label');
+      if (l && /exercice/i.test(l.textContent)) stat = s.querySelector('.stat-val');
+    });
+    out[g] = { page: page, secEls: secEls, cards: cards, stat: stat, statOrig: stat ? stat.textContent : '' };
+  });
+  return out;
+})();
+</script>
 <script>
 /* ══════════════════════════════════════════════════════
    ACCENT TOKENS
@@ -10017,6 +10059,8 @@ function loginSuccess(profileId) {
 
   // Charger les données du profil
   planningUpdateHomeSchedule();
+  // Programme personnalisé du profil (séances modifiées à distance)
+  try { if (typeof pgApplyAll === 'function') pgApplyAll(); } catch(e) {}
   // Recharger le weight tracker avec les données du bon profil
   if (typeof initWeightTracking === 'function') initWeightTracking();
   if (typeof initProgButtons    === 'function') initProgButtons();
@@ -10039,6 +10083,7 @@ function loginSuccess(profileId) {
       replaceRestoreAll(g);
     });
   }
+  try { if (typeof pgRefreshBars === 'function') pgRefreshBars(); } catch(e) {}
 }
 
 function renderProfileBadge() {
@@ -10880,6 +10925,13 @@ function rzFmtAgo(d) {
 }
 var RZ_ADMIN = { members: [], invites: {} };
 
+/* Couleur de thème d'un profil, lue en base : on ne garde que ce qui est strictement un code #RRGGBB */
+function rzThemeColor(raw, dflt) {
+  var t = null; try { t = JSON.parse(raw); } catch (e) {}
+  return (t && typeof t.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(t.color)) ? t.color : dflt;
+}
+function rzHexRgb(hex) { var n = parseInt(hex.slice(1), 16); return ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255); }
+
 function rzOpenAdmin() {
   var pg = rzEl('page-admin'); if (!pg || !RZ.member || !RZ.member.is_admin) return;
   // Page « Admin ». Si on y est déjà (rechargement après un enregistrement), on garde l'affichage et le défilement.
@@ -10890,28 +10942,32 @@ function rzOpenAdmin() {
   Promise.all([
     RZ.sb.from('members').select('user_id,email,profile_id,is_admin,last_seen_at').order('created_at'),
     RZ.sb.from('invites').select('profile_id,email'),
-    RZ.sb.from('profile_data').select('profile_id,updated_at').order('updated_at', { ascending: false }).limit(1000)
+    RZ.sb.from('profile_data').select('profile_id,updated_at').order('updated_at', { ascending: false }).limit(1000),
+    // couleurs de thème : si cette lecture échoue, on garde les couleurs par défaut (elle ne doit jamais bloquer la page)
+    RZ.sb.from('profile_data').select('profile_id,value').eq('key', 'forge-theme-v1').then(function(x) { return x; }, function() { return { data: [] }; })
   ]).then(function(r) {
     if (r[0].error) throw r[0].error;
     if (r[1].error) throw r[1].error;
     var members = r[0].data || [], invites = {}, last = {};
     (r[1].data || []).forEach(function(x) { invites[x.profile_id] = x.email; });
     (r[2].data || []).forEach(function(x) { if (!last[x.profile_id]) last[x.profile_id] = x.updated_at; });
+    var themes = {};
+    ((r[3] && r[3].data) || []).forEach(function(x) { themes[x.profile_id] = x.value; });
     RZ_ADMIN.members = members; RZ_ADMIN.invites = invites;
 
     var html = '<button class="rz-btn ghost" style="margin-top:14px" onclick="rzdOpen()">&#x1F4CA; TABLEAU DE BORD</button>';
     html += '<div class="rz-help">Mets l’email de chaque personne : quand elle crée son compte avec cet email, elle arrive directement dans son profil. Un email absent de cette liste n’a accès à rien.</div>';
     html += '<div class="rz-sec">PROFILS</div>';
     rzProfiles().forEach(function(p) {
-      var c = PROFILE_CONFIG[p];
+      var c = PROFILE_CONFIG[p], col = rzThemeColor(themes[p], c.color);
       var acc = members.filter(function(m) { return m.profile_id === p; })[0];
       var st;
       if (p === 'mathieu') st = '👑 toi (admin) · ' + rzEsc(RZ.member.email);
       else if (acc) st = '✓ compte actif · vu ' + rzFmtAgo(acc.last_seen_at);
       else if (invites[p]) st = '⏳ en attente de son inscription';
       else st = 'aucun email → personne n’y a accès';
-      html += '<div class="rz-card" id="rz-card-' + p + '">'
-        + '<div class="rz-card-top"><div class="profile-avatar rz-av" style="background:' + c.color + '">' + c.initial + '</div>'
+      html += '<div class="rz-card" id="rz-card-' + p + '" style="--pc:' + col + ';--pcr:' + rzHexRgb(col) + '">'
+        + '<div class="rz-card-top"><div class="profile-avatar rz-av" style="background:' + col + '">' + c.initial + '</div>'
         + '<div class="rz-row-main"><div class="rz-email">' + c.name + '</div>'
         + '<div class="rz-dim">' + st + '</div>'
         + '<div class="rz-dim">Dernière donnée reçue : ' + rzFmtAgo(last[p]) + '</div></div>'
@@ -11793,6 +11849,675 @@ function rzdMsg(p) { rzmOpen(p); }
   rzmClose = function() { orig.apply(this, arguments); if (RZD.open) rzdRender(); };
 })();
 
+</script>
+<script>
+/* ════════════════════════════════════════════════════════════
+   RIZE PROGRAMME (2/2) — séances modifiables à distance, par profil
+   Réservé à l'admin pour l'édition ; chaque profil reçoit son programme
+   via la synchro (clé u_<profil>_program-v1).
+
+   program-v1 = { v:1, by:'mathieu', at:<ms>, g:{ jambes:{ sec:[ [item,…], … ] }, … } }
+   item       = { o:<n° de la carte d'origine> } | { lib:'groupe:exercice' }
+                (+ m:[valeurs des pastilles Séries/Reps…], rest:<secondes>)
+   Sans entrée pour un groupe → séance d'origine, rien n'est touché.
+═════════════════════════════════════════════════════════════ */
+var PG_KEY = 'program-v1';
+var PG_GROUPS = ['jambes', 'back', 'bras'];
+var PG = { editGroup: null, editProfile: null, add: null, cfm: null, cfmTimer: null };
+
+/* ── CSS ─────────────────────────────────────────────────── */
+(function() {
+  var css = ''
+  + '.pg-bar{display:flex;align-items:center;gap:8px;margin:10px 14px 0;flex-wrap:wrap}'
+  + '.pg-bar.editing{background:rgba(var(--acc-r),.08);border:1px solid rgba(var(--acc-r),.45);border-radius:10px;padding:8px 10px}'
+  + '.pg-bar.editing .pg-info{flex:1 0 100%}'
+  + '.pg-bar.editing .pg-btn{flex:1}'
+  + '.pg-info{flex:1;min-width:120px;font-family:"Bebas Neue",sans-serif;letter-spacing:1.5px;font-size:15px;color:var(--acc)}'
+  + '.pg-info b{color:var(--wht);font-weight:400}'
+  + '.pg-chip{font-family:"Bebas Neue",sans-serif;font-size:11px;letter-spacing:1.5px;color:var(--acc);border:1px solid rgba(var(--acc-r),.4);border-radius:999px;padding:3px 10px;white-space:nowrap}'
+  + '.pg-btn{font-family:"Bebas Neue",sans-serif;font-size:13px;letter-spacing:1.5px;background:var(--s3);border:1px solid var(--s4);color:var(--txt);padding:9px 13px;border-radius:8px;cursor:pointer;white-space:nowrap}'
+  + '.pg-btn.pg-main{background:rgba(var(--acc-r),.14);border-color:rgba(var(--acc-r),.55);color:var(--acc)}'
+  + '.pg-btn[disabled]{opacity:.35;pointer-events:none}'
+  + '.pg-btn.armed,.pg-t.armed{color:#fff;background:#E53935;border-color:#E53935}'
+  + '.pg-tools{display:flex;align-items:center;gap:6px;padding:0 12px 10px;flex-wrap:wrap}'
+  + '.pg-tag{font-family:"Bebas Neue",sans-serif;font-size:10px;letter-spacing:1.5px;color:#FFB300;border:1px solid rgba(255,179,0,.5);border-radius:4px;padding:2px 6px}'
+  + '.pg-sp{flex:1}'
+  + '.pg-t{font-family:"Bebas Neue",sans-serif;font-size:13px;letter-spacing:1px;background:var(--s3);border:1px solid var(--s4);color:var(--txt);min-width:38px;height:34px;padding:0 9px;border-radius:7px;cursor:pointer}'
+  + '.pg-t[disabled]{opacity:.25;pointer-events:none}'
+  + '.pg-t.pg-del{color:#E57373}'
+  + '.pg-edpanel{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin:0 12px 12px;padding:10px;background:var(--s3);border:1px solid var(--s4);border-radius:8px}'
+  + '.pg-f{display:flex;flex-direction:column;gap:3px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}'
+  + '.pg-f input{width:72px;background:var(--bg);border:1px solid var(--s4);color:var(--wht);font-family:"Bebas Neue",sans-serif;font-size:18px;text-align:center;border-radius:6px;padding:5px 4px}'
+  + '.pg-ed-actions{display:flex;gap:6px;margin-left:auto}'
+  + '.pg-add{display:block;width:100%;margin:2px 0 12px;padding:12px;border:1px dashed rgba(var(--acc-r),.5);background:rgba(var(--acc-r),.05);color:var(--acc);font-family:"Bebas Neue",sans-serif;letter-spacing:2px;font-size:14px;border-radius:10px;cursor:pointer}'
+  + '.section.pg-empty,.divider.pg-empty{display:none}'
+  + '.pg-ed .card .cb{opacity:.25;pointer-events:none}'
+  + '.pg-ed .card .weight-tracker,.pg-ed .card .variantes-toggle,.pg-ed .card .variantes-box,.pg-ed .card-header button{display:none!important}'
+  + '.card[data-pg-lib] .replace-btn{display:none!important}'
+  + '@keyframes pgflash{0%{box-shadow:0 0 0 2px var(--acc)}100%{box-shadow:0 0 0 2px transparent}}'
+  + '.card.pg-flash{animation:pgflash 1.2s ease-out}'
+  + '#lib-prog-banner{display:none;background:rgba(var(--acc-r),.1);border-bottom:2px solid var(--acc);padding:10px 14px;align-items:center;gap:10px}'
+  + '#lib-prog-banner.show{display:flex}'
+  + '#lib-prog-banner-text{flex:1;font-size:12px;color:var(--acc);line-height:1.4}'
+  + '#lib-prog-banner-text strong{display:block;font-family:"Bebas Neue",sans-serif;font-size:14px;letter-spacing:1px}'
+  + '#lib-prog-cancel{font-family:"Bebas Neue",sans-serif;font-size:11px;letter-spacing:1.5px;background:var(--s3);border:1px solid var(--s4);color:var(--dim);padding:5px 12px;border-radius:6px;cursor:pointer;white-space:nowrap}';
+  var st = document.createElement('style');
+  st.id = 'pg-style';
+  st.textContent = css;
+  document.head.appendChild(st);
+})();
+
+/* ── Outils ──────────────────────────────────────────────── */
+function pgEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function pgIsAdmin() { return !!(typeof RZ !== 'undefined' && RZ.member && RZ.member.is_admin && CURRENT_PROFILE); }
+function pgProfName(p) { return (PROFILE_CONFIG[p] && PROFILE_CONFIG[p].name) || ''; }
+function pgNode(html) {
+  var t = document.createElement('template');
+  t.innerHTML = String(html).trim();
+  return t.content.firstElementChild;
+}
+function pgLibEx(ref) {
+  var p = String(ref || '').split(':');
+  if (p.length !== 2) return null;
+  var gr = EXERCISE_LIBRARY[p[0]];
+  if (!gr) return null;
+  var ex = null;
+  for (var i = 0; i < gr.exercises.length; i++) if (gr.exercises[i].id === p[1]) { ex = gr.exercises[i]; break; }
+  return ex ? { gid: p[0], group: gr, ex: ex } : null;
+}
+function pgLibRest(L) { return Math.round(Number(L.ex.rest)) || 60; }
+
+/* ── Stockage (par profil, synchronisé) ───────────────────── */
+function pgLoad() {
+  try {
+    var s = localStorage.getItem(pKey(PG_KEY));
+    var o = s ? JSON.parse(s) : null;
+    return (o && typeof o === 'object' && o.g && typeof o.g === 'object') ? o : null;
+  } catch (e) { return null; }
+}
+function pgDefaultLayout(g) {
+  var S = PG_SNAP[g], sec = S.secEls.map(function() { return []; });
+  S.cards.forEach(function(c, i) { sec[c.sec].push({ o: i }); });
+  return { sec: sec };
+}
+/* Empreinte de la séance d'origine : si l'appli change une séance, les anciens réglages ne s'appliquent pas par erreur */
+function pgSig(g) {
+  var t = PG_SNAP[g].cards.map(function(c) { return c.name; }).join('|'), h = 5381;
+  for (var i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+/* Valide ce qui vient du stockage / du réseau ; renvoie un layout propre ou null */
+function pgNormalize(g, raw) {
+  var S = PG_SNAP[g];
+  if (!S || !raw || !Array.isArray(raw.sec) || raw.sec.length !== S.secEls.length) return null;
+  if (raw.sig !== undefined && raw.sig !== pgSig(g)) return null;
+  var seen = {}, total = 0, out = { sec: [] };
+  for (var si = 0; si < raw.sec.length; si++) {
+    if (!Array.isArray(raw.sec[si])) return null;
+    var items = [];
+    raw.sec[si].forEach(function(it) {
+      if (!it || typeof it !== 'object') return;
+      var o;
+      if (typeof it.o === 'number' && it.o % 1 === 0 && it.o >= 0 && it.o < S.cards.length) {
+        if (seen[it.o]) return;
+        seen[it.o] = 1; o = { o: it.o };
+      } else if (typeof it.lib === 'string' && pgLibEx(it.lib)) {
+        o = { lib: it.lib };
+      } else return;
+      if (Array.isArray(it.m)) {
+        var m = it.m.slice(0, 4).map(function(v) { return v == null ? null : String(v).slice(0, 8); });
+        if (m.some(function(v) { return v !== null && v !== ''; })) o.m = m;
+      }
+      var r = Math.round(Number(it.rest));
+      if (r >= 5 && r <= 600) o.rest = r;
+      items.push(o); total++;
+    });
+    out.sec.push(items);
+  }
+  return total ? out : null;
+}
+function pgCompact(L) {
+  return { sec: L.sec.map(function(a) {
+    return a.map(function(it) {
+      var o = it.o != null ? { o: it.o } : { lib: it.lib };
+      if (it.m) o.m = it.m;
+      if (it.rest) o.rest = it.rest;
+      return o;
+    });
+  }) };
+}
+function pgIsDefault(g, L) {
+  return JSON.stringify(pgCompact(L)) === JSON.stringify(pgDefaultLayout(g));
+}
+/* Layout actuellement enregistré (ou d'origine) */
+function pgLayoutFor(g) {
+  var prog = pgLoad();
+  var L = prog && prog.g[g] ? pgNormalize(g, prog.g[g]) : null;
+  return L || pgDefaultLayout(g);
+}
+function pgStore(g, L) {
+  var prog = pgLoad() || { v: 1, g: {} };
+  if (pgIsDefault(g, L)) delete prog.g[g];
+  else { var c = pgCompact(L); c.sig = pgSig(g); prog.g[g] = c; }
+  try {
+    if (!Object.keys(prog.g).length) {
+      if (localStorage.getItem(pKey(PG_KEY)) !== null) localStorage.removeItem(pKey(PG_KEY));
+    } else {
+      prog.v = 1;
+      prog.by = (typeof RZ !== 'undefined' && RZ.member && RZ.member.profile_id) || 'admin';
+      prog.at = Date.now();
+      localStorage.setItem(pKey(PG_KEY), JSON.stringify(prog));
+    }
+  } catch (e) {}
+}
+function pgCustomInfo(g) {
+  var prog = pgLoad();
+  var L = prog && prog.g[g] ? pgNormalize(g, prog.g[g]) : null;
+  return { custom: !!(L && !pgIsDefault(g, L)), by: prog && prog.by };
+}
+
+/* ── Construction des cartes ──────────────────────────────── */
+function pgSetRest(card, n) {
+  var t = card.querySelector('.tip');
+  n = Math.round(Number(n));
+  if (!t || !(n >= 5 && n <= 600)) return;
+  var h = t.innerHTML;
+  if (/Récup\s+\d+s/i.test(h)) h = h.replace(/Récup\s+\d+s/i, 'Récup ' + n + 's');
+  else h = h.replace(/\s+$/, '') + ' Récup ' + n + 's.';
+  t.innerHTML = h;
+  card.dataset.pgRest = String(n);
+}
+function pgLibHTML(g, L, it) {
+  var ex = L.ex;
+  var mv = (it && it.m) || [];
+  var sets = mv[0] != null && mv[0] !== '' ? mv[0] : '3';
+  var reps = mv[1] != null && mv[1] !== '' ? mv[1] : '12';
+  return '<div class="card" data-group="' + g + '" data-pg-lib="1">'
+    + '<div class="card-header"><div class="ex-num">0</div>'
+    + '<div class="ex-info"><div class="ex-name">' + pgEsc(ex.name) + '</div><div class="ex-focus">' + pgEsc(ex.focus) + '</div></div>'
+    + '<div class="ex-metrics">'
+    + '<div class="metric"><div class="metric-val">' + pgEsc(sets) + '</div><div class="metric-label">Séries</div></div>'
+    + '<div class="metric"><div class="metric-val">' + pgEsc(reps) + '</div><div class="metric-label">Reps</div></div>'
+    + '</div><div class="cb" onclick="toggle(this,\'' + g + '\')"></div></div>'
+    + '<div class="tip"><strong>🔧 ' + pgEsc(ex.equipment) + '</strong> — ' + ex.tip + '</div>'
+    + '</div>';
+}
+function pgBuildCard(g, it) {
+  var S = PG_SNAP[g], node;
+  if (it.o != null) {
+    node = pgNode(S.cards[it.o].html);
+    if (it.m) {
+      var mv = node.querySelectorAll('.ex-metrics .metric-val');
+      it.m.forEach(function(v, i) { if (v != null && v !== '' && mv[i]) mv[i].textContent = v; });
+    }
+  } else {
+    var L = pgLibEx(it.lib);
+    node = pgNode(pgLibHTML(g, L, it));
+    if (!/Récup\s+\d+s/i.test(node.querySelector('.tip').textContent)) pgSetRest(node, pgLibRest(L));
+  }
+  if (it.rest) pgSetRest(node, it.rest);
+  return node;
+}
+/* valeurs « d'origine » d'un item (pour ne stocker que les écarts) */
+function pgBase(g, it) {
+  if (it.o != null) {
+    var c = PG_SNAP[g].cards[it.o];
+    return { m: c.metrics.slice(), rest: c.rest };
+  }
+  var L = pgLibEx(it.lib);
+  var t = L ? /Récup\s+(\d+)s/i.exec(L.ex.tip) : null;
+  return { m: ['3', '12'], rest: t ? parseInt(t[1], 10) : (L ? pgLibRest(L) : 0) };
+}
+
+/* ── Rendu d'une séance à partir d'un layout ──────────────── */
+function pgRender(g, L) {
+  var S = PG_SNAP[g], page = S.page;
+  var editing = PG.editGroup === g;
+  var custom = !pgIsDefault(g, L);
+  var created = [], total = 0;
+  var flat = [];
+  L.sec.forEach(function(a, si) { a.forEach(function(it, ii) { flat.push([si, ii]); }); });
+
+  L.sec.forEach(function(items, si) {
+    var sec = S.secEls[si];
+    Array.prototype.forEach.call(sec.querySelectorAll(':scope > .card, :scope > .superset-wrap, :scope > .pg-add'), function(x) { x.remove(); });
+    var runs = [], cur = null;
+    items.forEach(function(it, ii) {
+      var node = pgBuildCard(g, it);
+      node.dataset.pgSi = String(si);
+      node.dataset.pgIi = String(ii);
+      created.push(node); total++;
+      var key = null;
+      if (it.o != null && S.cards[it.o].ss >= 0) key = S.cards[it.o].sec + ':' + S.cards[it.o].ss;
+      if (key !== null && cur && cur.key === key) cur.nodes.push(node);
+      else { cur = { key: key, nodes: [node] }; runs.push(cur); }
+    });
+    runs.forEach(function(r) {
+      if (r.key !== null && r.nodes.length > 1) {
+        var w = document.createElement('div');
+        w.className = 'superset-wrap';
+        w.innerHTML = '<div class="superset-label">SUPERSET</div>';
+        r.nodes.forEach(function(n) { w.appendChild(n); });
+        sec.appendChild(w);
+      } else r.nodes.forEach(function(n) { sec.appendChild(n); });
+    });
+    var empty = items.length === 0 && !editing;
+    sec.classList.toggle('pg-empty', empty);
+    var prev = sec.previousElementSibling;
+    if (prev && prev.classList.contains('divider')) prev.classList.toggle('pg-empty', empty);
+    if (editing) {
+      var add = document.createElement('button');
+      add.type = 'button'; add.className = 'pg-add';
+      add.textContent = '＋ AJOUTER UN EXERCICE';
+      add.addEventListener('click', function() { pgStartAdd(g, si); });
+      sec.appendChild(add);
+    }
+  });
+
+  /* numérotation : seulement si le programme diffère de l'original */
+  if (custom) {
+    var k = 0;
+    S.secEls.forEach(function(sec) {
+      Array.prototype.forEach.call(sec.children, function(ch) {
+        if (ch.classList.contains('card')) {
+          var n = ch.querySelector('.ex-num'); if (n) n.textContent = String(++k);
+        } else if (ch.classList.contains('superset-wrap')) {
+          k++;
+          Array.prototype.forEach.call(ch.querySelectorAll('.card'), function(c, j) {
+            var n = c.querySelector('.ex-num'); if (n) n.textContent = k + String.fromCharCode(65 + j);
+          });
+        }
+      });
+    });
+  }
+  if (S.stat) {
+    var base = parseInt(S.statOrig, 10);
+    S.stat.textContent = !custom ? S.statOrig : String(isNaN(base) ? total : Math.max(0, base + total - S.cards.length));
+  }
+  page.classList.toggle('pg-ed', editing);
+  page.dataset.pgDirty = custom ? '1' : '';
+
+  if (editing) created.forEach(function(card) { pgAddTools(g, L, card, flat); });
+  return created;
+}
+
+/* Boutons / compteurs / suivi de charges sur les cartes (re)créées */
+function pgEnhance(newCards) {
+  try { initVariants(); } catch (e) {}
+  try { initSchemaButtons(); } catch (e) {}
+  try { initReplaceButtons(); } catch (e) {}
+  try { initWeightTracking(); } catch (e) {}
+  try { initProgButtons(); } catch (e) {}
+  try { if (typeof rzmUpdateBadges === 'function') rzmUpdateBadges(); } catch (e) {}   // boutons 💬 des cartes
+  newCards.forEach(function(c) {
+    try { addFocusBtn(c); } catch (e) {}
+    try { addLongPress(c); } catch (e) {}
+  });
+}
+function pgRecount() {
+  try {
+    initCounts(); checksReset(); checksRestore();
+    PG_GROUPS.forEach(function(x) { updateProgress(x); updateNavBadge(x); });
+  } catch (e) {}
+}
+
+/* Applique à la séance `g` le programme du profil courant (rien si jamais personnalisée) */
+function pgApplyGroup(g) {
+  var S = PG_SNAP[g]; if (!S) return;
+  var prog = pgLoad();
+  var L = prog && prog.g[g] ? pgNormalize(g, prog.g[g]) : null;
+  if (!L && !S.page.dataset.pgDirty && PG.editGroup !== g) return;
+  var cards = pgRender(g, L || pgDefaultLayout(g));
+  pgEnhance(cards);
+  try { replaceRestoreAll(g); } catch (e) {}
+}
+function pgApplyAll() {
+  if (PG.editGroup && PG.editProfile !== CURRENT_PROFILE) pgStopEdit(true);
+  if (PG.add && PG.editProfile !== CURRENT_PROFILE) pgHideBanner();
+  PG_GROUPS.forEach(pgApplyGroup);
+  try { initCounts(); } catch (e) {}
+}
+
+/* ── Édition : une modification = layout changé → sauvé → séance redessinée ── */
+function pgEdit(g, fn) {
+  var L = pgLayoutFor(g);
+  var map = {};
+  try { map = replaceLoad(g); } catch (e) {}
+  var before = JSON.stringify(map);
+  var k = 0;
+  L.sec.forEach(function(a) { a.forEach(function(it) { if (map[k] && it.o != null) it._r = map[k]; k++; }); });
+  var res = fn(L);
+  if (res) L = res;
+  var nm = {}; k = 0;
+  L.sec.forEach(function(a) { a.forEach(function(it) { if (it._r) nm[k] = it._r; delete it._r; k++; }); });
+  if (JSON.stringify(nm) !== before) { try { replaceSaveAll(g, nm); } catch (e) {} }
+  pgStore(g, L);
+  pgRerender(g);
+}
+function pgRerender(g, focusPos) {
+  var area = document.getElementById('scroll-area');
+  var st = area ? area.scrollTop : 0;
+  var L = pgLayoutFor(g);
+  var cards = pgRender(g, L);
+  pgEnhance(cards);
+  try { replaceRestoreAll(g); } catch (e) {}
+  pgRecount();
+  if (area) area.scrollTop = st;
+  if (focusPos) {
+    var c = PG_SNAP[g].page.querySelector('.card[data-pg-si="' + focusPos[0] + '"][data-pg-ii="' + focusPos[1] + '"]');
+    if (c) { try { c.scrollIntoView({ block: 'nearest' }); } catch (e) {} c.classList.add('pg-flash'); }
+  }
+  pgRefreshBars();
+}
+
+function pgAddTools(g, L, card, flat) {
+  var si = +card.dataset.pgSi, ii = +card.dataset.pgIi;
+  var it = L.sec[si][ii];
+  var pos = 0;
+  for (var i = 0; i < flat.length; i++) if (flat[i][0] === si && flat[i][1] === ii) { pos = i; break; }
+  var tools = document.createElement('div');
+  tools.className = 'pg-tools';
+  var tag = it.lib ? 'AJOUTÉ' : ((it.m || it.rest) ? 'MODIFIÉ' : '');
+  tools.innerHTML = (tag ? '<span class="pg-tag">' + tag + '</span>' : '')
+    + '<span class="pg-sp"></span>'
+    + '<button type="button" class="pg-t" data-a="up" aria-label="Monter"' + (pos === 0 ? ' disabled' : '') + '>▲</button>'
+    + '<button type="button" class="pg-t" data-a="down" aria-label="Descendre"' + (pos === flat.length - 1 ? ' disabled' : '') + '>▼</button>'
+    + '<button type="button" class="pg-t" data-a="edit">✏️ MODIFIER</button>'
+    + '<button type="button" class="pg-t pg-del" data-a="del" aria-label="Retirer">🗑</button>';
+  /* sinon un appui long ici ouvrirait le mode focus de la carte */
+  ['touchstart', 'touchend', 'touchmove', 'mousedown', 'mouseup'].forEach(function(ev) {
+    tools.addEventListener(ev, function(e) { e.stopPropagation(); });
+  });
+  tools.addEventListener('click', function(e) {
+    var b = e.target.closest('button[data-a]'); if (!b) return;
+    e.stopPropagation();
+    pgToolAction(g, card, b);
+  });
+  var header = card.querySelector('.card-header');
+  header.after(tools);
+}
+
+function pgToolAction(g, card, btn) {
+  var si = +card.dataset.pgSi, ii = +card.dataset.pgIi, a = btn.dataset.a;
+  if (a === 'edit') { pgOpenEditor(g, card); return; }
+  if (a === 'del') {
+    if (!btn.classList.contains('armed')) {
+      btn.classList.add('armed'); btn.textContent = '⚠️ RETIRER ?';
+      setTimeout(function() { if (btn.isConnected) { btn.classList.remove('armed'); btn.textContent = '🗑'; } }, 3000);
+      return;
+    }
+    var n = 0;
+    pgLayoutFor(g).sec.forEach(function(x) { n += x.length; });
+    if (n <= 1) { showToast('Garde au moins un exercice', 'rgba(229,57,53,.9)'); return; }
+    pgEdit(g, function(L) { L.sec[si].splice(ii, 1); });
+    showToast('Exercice retiré du programme', 'rgba(255,179,0,.96)');
+    return;
+  }
+  var dest = null;
+  pgEdit(g, function(L) {
+    var item = L.sec[si][ii];
+    if (a === 'up') {
+      if (ii > 0) { L.sec[si].splice(ii, 1); L.sec[si].splice(ii - 1, 0, item); dest = [si, ii - 1]; }
+      else {
+        if (si > 0) { L.sec[si].splice(ii, 1); L.sec[si - 1].push(item); dest = [si - 1, L.sec[si - 1].length - 1]; }
+      }
+    } else if (a === 'down') {
+      if (ii < L.sec[si].length - 1) { L.sec[si].splice(ii, 1); L.sec[si].splice(ii + 1, 0, item); dest = [si, ii + 1]; }
+      else if (si < L.sec.length - 1) { L.sec[si].splice(ii, 1); L.sec[si + 1].unshift(item); dest = [si + 1, 0]; }
+    }
+  });
+  if (dest) {
+    var c = PG_SNAP[g].page.querySelector('.card[data-pg-si="' + dest[0] + '"][data-pg-ii="' + dest[1] + '"]');
+    if (c) { try { c.scrollIntoView({ block: 'nearest' }); } catch (e) {} c.classList.add('pg-flash'); }
+  }
+}
+
+function pgOpenEditor(g, card) {
+  var old = card.querySelector('.pg-edpanel');
+  if (old) { old.remove(); return; }
+  var si = +card.dataset.pgSi, ii = +card.dataset.pgIi;
+  var metrics = card.querySelectorAll('.ex-metrics .metric');
+  var hasSets = false;
+  var h = '';
+  Array.prototype.forEach.call(metrics, function(m, i) {
+    var lbl = m.querySelector('.metric-label').textContent;
+    if (/s.rie/i.test(lbl)) hasSets = true;
+    h += '<label class="pg-f"><span>' + pgEsc(lbl) + '</span><input type="text" maxlength="8" data-mi="' + i + '" value="' + pgEsc(m.querySelector('.metric-val').textContent) + '"></label>';
+  });
+  var tipTxt = (card.querySelector('.tip') || {}).textContent || '';
+  var hasRest = hasSets || /Récup\s+\d+s/i.test(tipTxt);
+  if (hasRest) h += '<label class="pg-f"><span>Repos (s)</span><input type="number" inputmode="numeric" min="5" max="600" step="5" data-rest="1" value="' + getRestFromCard(card) + '"></label>';
+  h += '<div class="pg-ed-actions"><button type="button" class="pg-btn" data-a="cancel">ANNULER</button><button type="button" class="pg-btn pg-main" data-a="ok">OK</button></div>';
+  var panel = document.createElement('div');
+  panel.className = 'pg-edpanel';
+  panel.innerHTML = h;
+  ['touchstart', 'touchend', 'touchmove', 'mousedown', 'mouseup'].forEach(function(ev) {
+    panel.addEventListener(ev, function(e) { e.stopPropagation(); });
+  });
+  panel.addEventListener('click', function(e) {
+    var b = e.target.closest('button[data-a]'); if (!b) return;
+    e.stopPropagation();
+    if (b.dataset.a === 'cancel') { panel.remove(); return; }
+    var vals = {}, rest = null, bad = '';
+    panel.querySelectorAll('input[data-mi]').forEach(function(inp) {
+      var i = +inp.dataset.mi, v = inp.value.trim();
+      var lbl = metrics[i].querySelector('.metric-label').textContent;
+      if (!v) return;
+      if (/s.rie/i.test(lbl) && !(/^\d+$/.test(v) && +v >= 1 && +v <= 10)) bad = 'Séries : un nombre entre 1 et 10';
+      vals[i] = v;
+    });
+    var ri = panel.querySelector('input[data-rest]');
+    if (ri && ri.value !== '') {
+      rest = Math.round(Number(ri.value));
+      if (!(rest >= 5 && rest <= 600)) bad = 'Repos : entre 5 et 600 secondes';
+    }
+    if (bad) { showToast(bad, 'rgba(229,57,53,.9)'); return; }
+    pgEdit(g, function(L) {
+      var it = L.sec[si][ii], base = pgBase(g, it);
+      var m = [], any = false;
+      for (var i = 0; i < metrics.length; i++) {
+        var v = vals[i];
+        if (v != null && v !== base.m[i]) { m.push(v); any = true; } else m.push(null);
+      }
+      if (any) it.m = m; else delete it.m;
+      if (rest != null && rest !== base.rest) it.rest = rest; else delete it.rest;
+    });
+    showToast('✓ Programme mis à jour', 'rgba(0,200,83,.96)');
+  });
+  var tools = card.querySelector('.pg-tools');
+  (tools || card.querySelector('.card-header')).after(panel);
+}
+
+/* ── Ajout depuis la bibliothèque ─────────────────────────── */
+function pgStartAdd(g, si) {
+  PG.add = { g: g, si: si };
+  try { libReplaceCard = null; libAddMode = false; } catch (e) {}
+  var secTitle = (PG_SNAP[g].secEls[si].querySelector('.sec-title') || {}).textContent || '';
+  var b = document.getElementById('lib-prog-banner');
+  if (b) {
+    b.classList.add('show');
+    document.getElementById('lib-prog-name').textContent = pgProfName(CURRENT_PROFILE) + ' · ' + secTitle;
+  }
+  switchTab('biblio');
+  var first = (TAB_TO_LIB_GROUPS[g] || ['jambes'])[0];
+  var T = secTitle.toLowerCase();
+  if (/pectoraux/.test(T)) first = 'pecs';
+  else if (/paules/.test(T)) first = 'epaules';
+  else if (/biceps/.test(T)) first = 'biceps';
+  else if (/triceps/.test(T)) first = 'triceps';
+  else if (/tirage|trap|lombaire|dos/.test(T)) first = 'dos';
+  else if (/gainage/.test(T)) first = 'gainage';
+  else if (/force|puissance|explosiv/.test(T)) first = 'jambes';
+  selectLibGroup(first);
+}
+function pgHideBanner() {
+  PG.add = null;
+  var b = document.getElementById('lib-prog-banner');
+  if (b) b.classList.remove('show');
+}
+function pgCancelAdd() {
+  var g = PG.editGroup;
+  pgHideBanner();
+  closeLibDetail();
+  switchTab(g || 'home');
+}
+function pgAddFromLib(gid, eid) {
+  var t = PG.add; if (!t) return;
+  var L = pgLibEx(gid + ':' + eid); if (!L) return;
+  var dup = false;
+  document.querySelectorAll('.card[data-group="' + t.g + '"] .ex-name').forEach(function(n) {
+    if (n.textContent.replace('✦ BIBLIO', '').trim() === L.ex.name) dup = true;
+  });
+  if (dup) { showToast('Déjà dans ce programme', 'rgba(229,57,53,.9)'); return; }
+  var dest = null;
+  pgEdit(t.g, function(lay) { lay.sec[t.si].push({ lib: gid + ':' + eid }); dest = [t.si, lay.sec[t.si].length - 1]; });
+  pgHideBanner();
+  closeLibDetail();
+  switchTab(t.g);
+  showToast('✦ Ajouté au programme de ' + pgProfName(CURRENT_PROFILE), 'rgba(255,179,0,.96)');
+  setTimeout(function() {
+    var c = PG_SNAP[t.g].page.querySelector('.card[data-pg-si="' + dest[0] + '"][data-pg-ii="' + dest[1] + '"]');
+    if (c) { try { c.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} c.classList.add('pg-flash'); }
+  }, 350);
+}
+
+/* ── Mode édition ─────────────────────────────────────────── */
+function pgStartEdit(g) {
+  if (!pgIsAdmin() || !PG_SNAP[g]) return;
+  if (PG.editGroup && PG.editGroup !== g) pgStopEdit(true);
+  PG.editGroup = g; PG.editProfile = CURRENT_PROFILE;
+  document.body.classList.add('pg-editing');
+  pgRerender(g);
+  showToast('✏️ Édition du programme de ' + pgProfName(CURRENT_PROFILE), 'rgba(255,179,0,.96)');
+}
+function pgStopEdit(silent) {
+  var g = PG.editGroup;
+  PG.editGroup = null; PG.cfm = null;
+  document.body.classList.remove('pg-editing');
+  if (PG.add) pgHideBanner();
+  if (g) {
+    PG_SNAP[g].page.classList.remove('pg-ed');
+    try { pgRerender(g); } catch (e) {}
+  }
+  if (!silent && typeof RZ !== 'undefined' && RZ.pendingRefresh) { try { rzRefreshUI(); } catch (e) {} }
+}
+function pgReset(g) {
+  if (PG.cfm !== g) {
+    PG.cfm = g;
+    clearTimeout(PG.cfmTimer);
+    PG.cfmTimer = setTimeout(function() { PG.cfm = null; pgRefreshBars(); }, 3000);
+    pgRefreshBars();
+    return;
+  }
+  PG.cfm = null; clearTimeout(PG.cfmTimer);
+  pgEdit(g, function(L) {
+    var rm = {};
+    L.sec.forEach(function(a) { a.forEach(function(it) { if (it.o != null && it._r) rm[it.o] = it._r; }); });
+    var D = pgDefaultLayout(g);
+    D.sec.forEach(function(a) { a.forEach(function(it) { if (rm[it.o]) it._r = rm[it.o]; }); });
+    return D;
+  });
+  showToast('↺ Programme d\'origine remis', 'rgba(0,200,83,.96)');
+}
+
+/* ── Barre d'état / bouton « Éditer » de chaque séance ─────── */
+function pgInitBars() {
+  PG_GROUPS.forEach(function(g) {
+    var S = PG_SNAP[g]; if (!S || document.getElementById('pg-bar-' + g)) return;
+    var bar = document.createElement('div');
+    bar.id = 'pg-bar-' + g; bar.className = 'pg-bar'; bar.style.display = 'none';
+    var row = S.page.querySelector('.stats-row');
+    if (row) row.after(bar); else S.page.prepend(bar);
+    bar.addEventListener('click', function(e) {
+      var b = e.target.closest('button[data-a]'); if (!b) return;
+      if (b.dataset.a === 'start') pgStartEdit(g);
+      else if (b.dataset.a === 'stop') pgStopEdit();
+      else if (b.dataset.a === 'reset') pgReset(g);
+    });
+  });
+  if (!document.getElementById('lib-prog-banner')) {
+    var anchor = document.getElementById('lib-replace-banner');
+    var b = document.createElement('div');
+    b.id = 'lib-prog-banner';
+    b.innerHTML = '<div id="lib-prog-banner-text"><strong>AJOUT AU PROGRAMME</strong><span id="lib-prog-name" style="font-style:italic"></span></div>'
+      + '<button id="lib-prog-cancel" type="button">✕ ANNULER</button>';
+    if (anchor) anchor.before(b); else document.getElementById('page-biblio').prepend(b);
+    document.getElementById('lib-prog-cancel').addEventListener('click', pgCancelAdd);
+  }
+}
+function pgRefreshBars() {
+  PG_GROUPS.forEach(function(g) {
+    var bar = document.getElementById('pg-bar-' + g); if (!bar) return;
+    var info = pgCustomInfo(g);
+    var editing = PG.editGroup === g;
+    var by = info.by && PROFILE_CONFIG[info.by] ? ' · ' + PROFILE_CONFIG[info.by].name.toUpperCase() : '';
+    var chip = info.custom ? '<span class="pg-chip">✦ PROGRAMME PERSONNALISÉ' + pgEsc(by) + '</span>' : '';
+    var html = '';
+    if (editing) {
+      html = '<div class="pg-info">✏️ ÉDITION · <b>' + pgEsc(pgProfName(CURRENT_PROFILE).toUpperCase()) + '</b></div>'
+        + '<button type="button" class="pg-btn' + (PG.cfm === g ? ' armed' : '') + '" data-a="reset"' + (info.custom ? '' : ' disabled') + '>'
+        + (PG.cfm === g ? '⚠️ CONFIRMER ?' : '↺ ORIGINAL') + '</button>'
+        + '<button type="button" class="pg-btn pg-main" data-a="stop">✓ TERMINER</button>';
+    } else if (pgIsAdmin()) {
+      html = chip + '<span class="pg-sp" style="flex:1"></span><button type="button" class="pg-btn pg-main" data-a="start">✏️ ÉDITER LE PROGRAMME</button>';
+    } else html = chip;
+    bar.innerHTML = html;
+    bar.style.display = html ? '' : 'none';
+    bar.classList.toggle('editing', editing);
+  });
+}
+
+/* ── Branchements sur le reste de l'appli ─────────────────── */
+function pgOnTab(tab) {
+  if (PG.add && tab !== 'biblio') pgHideBanner();
+  if (PG.editGroup && tab !== PG.editGroup && tab !== 'biblio') pgStopEdit();
+  pgRefreshBars();
+}
+(function() {
+  pgInitBars();
+
+  var _switchTab = switchTab;
+  switchTab = function(tab) { _switchTab(tab); try { pgOnTab(tab); } catch (e) {} };
+
+  /* bouton d'action de la bibliothèque en mode « ajout au programme » */
+  var _openLibDetail = openLibDetail;
+  openLibDetail = function(gid, eid) {
+    _openLibDetail(gid, eid);
+    if (!PG.add) return;
+    var a = document.getElementById('lib-detail-actions');
+    if (!a) return;
+    a.innerHTML = '<button class="lib-choose-btn" style="background:var(--acc);color:#000" data-gid="' + pgEsc(gid) + '" data-eid="' + pgEsc(eid)
+      + '" onclick="pgAddFromLib(this.dataset.gid, this.dataset.eid)">＋ AJOUTER AU PROGRAMME</button>';
+    var sh = document.querySelector('.lib-detail-sheet');
+    if (sh) sh.classList.add('has-actions');
+  };
+
+  /* un « repos » réglé pour une carte survit au remplacement / retour à l'original d'un exercice */
+  function reimpose(card) {
+    if (card && card.dataset && card.dataset.pgRest) pgSetRest(card, card.dataset.pgRest);
+  }
+  var _apply = applyReplaceToCard;
+  applyReplaceToCard = function(card) { var r = _apply.apply(this, arguments); reimpose(card); return r; };
+  var _resetRepl = resetLibReplace;
+  resetLibReplace = function(card) { var r = _resetRepl.apply(this, arguments); reimpose(card); return r; };
+  var _revert = replaceRevertVisual;
+  replaceRevertVisual = function(g) {
+    var r = _revert.apply(this, arguments);
+    document.querySelectorAll('.card[data-group="' + g + '"][data-pg-rest]').forEach(reimpose);
+    return r;
+  };
+
+  /* pas de rafraîchissement automatique pendant une édition */
+  var _overlay = rzOverlayOpen;
+  rzOverlayOpen = function() { return !!(PG.editGroup || PG.add) || _overlay(); };
+
+  var _filter = rzApplyProfileFilter;
+  rzApplyProfileFilter = function() { var r = _filter.apply(this, arguments); try { pgRefreshBars(); } catch (e) {} return r; };
+})();
 </script>
 </body>
 </html>
