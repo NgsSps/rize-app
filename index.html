@@ -2664,7 +2664,6 @@ body.modal-open #nav { display:none !important; }
 #rz-status{background:var(--s2);border:1px solid var(--s4);border-radius:10px;padding:12px 14px;margin-bottom:8px}
 .rz-st-who{font-size:13px;color:var(--wht)}
 .rz-st-state{font-size:11px;color:var(--dim);margin-top:3px}
-#rz-admin-btn{border-color:rgba(255,179,0,.5)!important;color:#FFB300!important}
 .rz-help{font-size:11px;color:var(--dim,#777);line-height:1.45;margin:14px 0 4px}
 .rz-card{background:var(--s2,#151515);border:1px solid var(--s4,#222);border-radius:10px;padding:10px 12px;margin-bottom:8px}
 .rz-card-top{display:flex;align-items:center;gap:10px}
@@ -2784,7 +2783,6 @@ body.rzd-open #scroll-area{overflow:hidden}
 .rzd-b i{position:absolute;top:-7px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:#E53935;color:#fff;font-style:normal;
   font-size:11px;line-height:18px;text-align:center;padding:0 4px;box-sizing:border-box}
 .rzd-foot{font-size:10px;color:var(--dim,#777);text-align:center;line-height:1.5;margin:6px 8px 0}
-#rz-dash-btn{border-color:rgba(255,179,0,.5)!important;color:#FFB300!important}
 </style>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#080808">
@@ -3057,20 +3055,31 @@ body.rzd-open #scroll-area{overflow:hidden}
       <span class="home-card-badge" style="background:rgba(255,179,0,.15);color:#FFB300">Best</span>
     </div>
 
+
+    <div class="home-card" id="rz-dash-btn" onclick="rzdOpen()" style="display:none;border-color:rgba(255,179,0,.25)">
+      <span class="home-card-emoji">&#x1F4CA;</span>
+      <div class="home-card-name" style="color:#FFB300">Tableau de bord</div>
+      <div class="home-card-sub">Activit&eacute; de tous les profils</div>
+      <span class="home-card-badge" style="background:rgba(255,179,0,.15);color:#FFB300">Suivi</span>
+    </div>
+
+    <div class="home-card" id="rz-admin-btn" onclick="rzOpenAdmin()" style="display:none;border-color:rgba(255,179,0,.25)">
+      <span class="home-card-emoji">&#x1F451;</span>
+      <div class="home-card-name" style="color:#FFB300">Admin</div>
+      <div class="home-card-sub">Profils &middot; Invitations</div>
+      <span class="home-card-badge" style="background:rgba(255,179,0,.15);color:#FFB300">Admin</span>
+    </div>
+
+    <div class="home-card" onclick="openBackup()" style="border-color:rgba(100,149,237,.25);grid-column:span 2">
+      <span class="home-card-emoji">&#x2699;&#xFE0F;</span>
+      <div class="home-card-name">Param&egrave;tres</div>
+      <div class="home-card-sub">Compte &middot; Sauvegarde &middot; Apparence</div>
+      <span class="home-card-badge" style="background:rgba(100,149,237,.15);color:#6495ED">R&eacute;glages</span>
+    </div>
+
   </div>
   <!-- Mentions légales -->
   <div class="legal-link" onclick="openLegal()">MENTIONS L&Eacute;GALES &middot; &copy; 2026 MATHIEU NOUGU&Egrave;S</div>
-
-  <!-- Bouton paramètres -->
-  <div class="home-backup-btn" id="rz-dash-btn" onclick="rzdOpen()" style="display:none">
-    &#x1F4CA; TABLEAU DE BORD
-  </div>
-  <div class="home-backup-btn" id="rz-admin-btn" onclick="rzOpenAdmin()" style="display:none">
-    &#x1F451; ADMIN &#x2014; TOUS LES PROFILS
-  </div>
-  <div class="home-backup-btn"  onclick="openBackup()" style="margin-bottom:10px">
-    &#x2699;&#xFE0F; PARAM&#xC8;TRES
-  </div>
 
   <div style="height:10px"></div>
 </div><!-- /page-home -->
