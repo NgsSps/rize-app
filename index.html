@@ -12529,7 +12529,7 @@ function pgOnTab(tab) {
    • La réception est gérée par le service worker (sw.js : push + notificationclick).
 ═════════════════════════════════════════════════════════════ */
 var RZP_VAPID = 'BHgNPuhRtQ8HiNy99ivAgkBxMR8ibguu_w_Twj6PTr-Hr2sqKGXXZ7mwxAUjk9ucYoAzPZs2YFrhc_p30bUq7Ow';  // clé PUBLIQUE (la privée reste dans Supabase)
-var RZP_FN    = 'push-notify';
+var RZP_FN    = 'smooth-worker';   // nom de la fonction Supabase (Edge Functions)
 var RZP = { busy: false, say: '', sayOk: true, synced: '' };
 
 /* ── Petits outils ───────────────────────────────────────────── */
