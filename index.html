@@ -10720,7 +10720,8 @@ function rzApplyProfileFilter() {
   document.querySelectorAll('#profile-select-view .profile-card').forEach(function(card) {
     var mt = /selectProfile\('([a-z]+)'\)/.exec(card.getAttribute('onclick') || '');
     if (!mt) return;
-    var ok = !m || m.is_admin || m.profile_id === mt[1];
+    // L'admin ne voit ici que SON profil (les autres : bouton « ADMIN — TOUS LES PROFILS » sur l'accueil). Sans profil rattaché → on montre tout, pour ne jamais rester bloqué.
+    var ok = !m || m.profile_id === mt[1] || (m.is_admin && !m.profile_id);
     card.style.display = ok ? '' : 'none';
   });
   var adm = rzEl('rz-admin-btn');
@@ -10728,7 +10729,7 @@ function rzApplyProfileFilter() {
   var dsh = rzEl('rz-dash-btn');
   if (dsh) dsh.style.display = (m && m.is_admin) ? '' : 'none';
   var title = document.querySelector('#profile-select-view .profile-select-title');
-  if (title) title.textContent = (m && m.is_admin) ? 'CHOISIS UN PROFIL (ADMIN)' : 'TON PROFIL';
+  if (title) title.textContent = (m && m.is_admin && !m.profile_id) ? 'CHOISIS UN PROFIL (ADMIN)' : 'TON PROFIL';
 }
 
 function rzAuthBusy(btnId, on, label) {
