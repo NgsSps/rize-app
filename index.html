@@ -2999,8 +2999,8 @@ body.rzm-open #scroll-area{overflow:hidden}
     <div class="home-card" onclick="switchTab('biblio')" style="border-color:rgba(162,89,255,.25)">
       <span class="home-card-emoji">&#x1F4DA;</span>
       <div class="home-card-name">Biblioth&egrave;que</div>
-      <div class="home-card-sub">58 exercices &middot; 7 groupes</div>
-      <span class="home-card-badge" style="background:rgba(162,89,255,.15);color:#A259FF">58 exercices</span>
+      <div class="home-card-sub" id="home-lib-sub">130 exercices &middot; 8 groupes</div>
+      <span class="home-card-badge" id="home-lib-badge" style="background:rgba(162,89,255,.15);color:#A259FF">130 exercices</span>
     </div>
 
     <div class="home-card" onclick="switchTab('nutri')" style="border-color:rgba(255,107,53,.25)">
@@ -3193,7 +3193,7 @@ body.rzm-open #scroll-area{overflow:hidden}
     <div class="card" data-group="jambes">
       <div class="card-header">
         <div class="ex-num">6</div>
-        <div class="ex-info"><div class="ex-name">Step-up Explosif</div><div class="ex-focus">Explosivité · Puissance unipodal</div></div>
+        <div class="ex-info"><div class="ex-name">Step-up Explosif</div><div class="ex-focus">Explosivité · Puissance unipodale</div></div>
         <div class="ex-metrics">
           <div class="metric"><div class="metric-val">3</div><div class="metric-label">Séries</div></div>
           <div class="metric"><div class="metric-val">8/j</div><div class="metric-label">Reps</div></div>
@@ -3842,13 +3842,13 @@ body.rzm-open #scroll-area{overflow:hidden}
   <div class="lib-header">
     <div class="lib-tag">📚 Référence</div>
     <div class="lib-title">BIBLIO<span>THÈQUE</span></div>
-    <div class="lib-subtitle">58 exercices · 7 groupes musculaires</div>
+    <div class="lib-subtitle" id="lib-subtitle">130 exercices · 8 groupes musculaires</div>
   </div>
 
   <div class="lib-stats">
-    <div class="lib-stat"><div class="lib-stat-val">58</div><div class="lib-stat-lbl">Exercices</div></div>
-    <div class="lib-stat"><div class="lib-stat-val">7</div><div class="lib-stat-lbl">Groupes</div></div>
-    <div class="lib-stat"><div class="lib-stat-val">5</div><div class="lib-stat-lbl">Équipements</div></div>
+    <div class="lib-stat"><div class="lib-stat-val" id="lib-stat-ex">130</div><div class="lib-stat-lbl">Exercices</div></div>
+    <div class="lib-stat"><div class="lib-stat-val" id="lib-stat-gr">8</div><div class="lib-stat-lbl">Groupes</div></div>
+    <div class="lib-stat"><div class="lib-stat-val" id="lib-stat-eq">8</div><div class="lib-stat-lbl">Équipements</div></div>
   </div>
 
   <!-- Bannière mode ajout -->
@@ -5688,7 +5688,7 @@ function selectVariant(box, varName, situation, activeItem) {
   if (activeItem) activeItem.classList.add('var-active');
   box.classList.remove('open');
   if (btn) btn.textContent = 'VARIANTES / ALTERNATIVES';
-  if (document.getElementById('schema-modal').classList.contains('show')) openSchema(varName);
+  if (document.getElementById('schema-modal').classList.contains('show')) openSchema(varName, box.dataset.origName || '');
   vibrate(20);
 }
 
@@ -5922,13 +5922,63 @@ const VARIANT_SCHEMA_MAP = {
   "Superman":                  "Extensions Lombaires",
 };
 
+/* Variantes dont le mouvement diffère vraiment de l'exercice d'origine : on affiche la fiche de la bibliothèque */
+const VARIANT_LIB_MAP = [
+  ["Bulgarian split squat",        "Fentes Bulgares"],
+  ["Rowing barre en pronation",    "Rowing Barre"],
+  ["Rowing barre Yates",           "Rowing Barre"],
+  ["Prise neutre (paumes",         "Tirage Prise Neutre"],
+  ["Tractions lestées",            "Tractions"],
+  ["Supprimer et remplacer par face pull", "Face Pull Câble"],
+  ["Remplacer par bird-dog",       "Bird-Dog"],
+  ["Écarté haltères sur banc",     "Écarté Haltères"],
+  ["Mains surélevées",             "Push-up / Pompe"],
+  ["Push-up genoux ou",            "Push-up / Pompe"],
+  ["Archer push-up",               "Push-up / Pompe"],
+  ["10 push-up très lents",        "Push-up / Pompe"],
+  ["Développé Arnold",             "Arnold Press"],
+  ["Développé barre devant",       "Développé Militaire Barre"],
+  ["Curl barre EZ",                "Curl Barre"],
+  ["Curl à la poulie basse",       "Curl Câble"],
+  ["Curl neutre à la poulie basse","Curl Câble"],
+  ["Dips banc ou chaise",          "Dips Banc"],
+  ["Extension nuque haltère",      "Extension au-dessus Tête"],
+  ["Dead bug",                     "Dead Bug"]
+];
+/* Fiche de la bibliothèque par nom exact (exercices ajoutés au programme, variantes) */
+function libSchemaByName(name) {
+  try {
+    const q = String(name || '').trim().toLowerCase();
+    if (!q) return null;
+    for (const gid of Object.keys(EXERCISE_LIBRARY)) {
+      const list = EXERCISE_LIBRARY[gid].exercises;
+      for (let i = 0; i < list.length; i++) {
+        if (list[i].name.toLowerCase() === q) return { img: list[i].img, points: list[i].points };
+      }
+    }
+  } catch (e) {}
+  return null;
+}
 function getSchemaForExercise(name) {
   if (EXERCISE_SCHEMAS[name]) return EXERCISE_SCHEMAS[name];
+  const exact = libSchemaByName(name);
+  if (exact) return exact;
+  const low = String(name || '').toLowerCase();
+  for (const [k, lib] of VARIANT_LIB_MAP) {
+    if (low.includes(k.toLowerCase())) { const d = libSchemaByName(lib); if (d) return d; }
+  }
   for (const [k, v] of Object.entries(VARIANT_SCHEMA_MAP)) {
-    if (name.toLowerCase().includes(k.toLowerCase()))
+    if (low.includes(k.toLowerCase()))
       return EXERCISE_SCHEMAS[v] || null;
   }
   return null;
+}
+/* Schéma d'une variante : le sien s'il existe, sinon celui de l'exercice d'origine (avec une note) */
+function getSchemaWithFallback(name, origName) {
+  const own = getSchemaForExercise(name);
+  if (own) return { data: own, fallback: false };
+  const base = origName && origName !== name ? getSchemaForExercise(origName) : null;
+  return base ? { data: base, fallback: true } : null;
 }
 
 /* ── Photo animée : alterne position de départ (0.jpg) et d'arrivée (1.jpg) ── */
@@ -5942,7 +5992,7 @@ function exAnimLoad(url) {
 }
 function exAnimInto(wrap, url0, name, onFail) {
   exAnimStop(wrap);
-  var url1 = /\/0\.jpg$/.test(url0) ? url0.replace(/\/0\.jpg$/, '/1.jpg') : null;
+  var url1 = /\/0\.jpg$/.test(url0) && !/\/Cat_Stretch\//.test(url0) ? url0.replace(/\/0\.jpg$/, '/1.jpg') : null;
   var token = {};
   wrap._animToken = token;
   wrap.style.minHeight = '210px';            // hauteur réservée : la fiche ne saute pas au chargement
@@ -5972,14 +6022,117 @@ function exAnimInto(wrap, url0, name, onFail) {
     if (onFail) onFail();
   });
 }
-function exVideoBtnHTML(name) {
-  var q = encodeURIComponent(name + ' exercice musculation technique');
+/* Recherches YouTube des cartes de séance qui ne sont pas dans la bibliothèque */
+var PROGRAM_VIDEO = {
+  'vélo ou tapis': 'échauffement cardio vélo avant musculation',
+  'rameur ergomètre': 'rameur technique de base',
+  'étirements statiques': 'étirements jambes après musculation',
+  'étirements dos & épaules': 'étirements dos épaules après musculation',
+  'étirements pecs & bras': 'étirements pectoraux bras après musculation',
+  'élastiques + rotations': 'échauffement épaules élastique rotations',
+  'push-up lesté / classique': 'pompes lestées technique'
+};
+/* Recherches vidéo propres aux variantes des séances (repérées par un bout de leur texte) */
+var VARIANT_VIDEO = [
+  ["corde à sauter ou montées de genoux", "corde à sauter technique débutant"],
+  ["rameur allure légère", "rameur technique de base"],
+  ["vélo 8'", "échauffement haut du corps avant musculation"],
+  ["tirage élastique debout", "tirage élastique debout dos technique"],
+  ["5 min minimum : quadri", "étirements quadriceps ischio après musculation"],
+  ["étirements en piscine", "étirements jambes après musculation"],
+  ["3 min minimum : grand dorsal", "étirement grand dorsal épaule après musculation"],
+  ["étirement en suspension à la barre", "suspension à la barre étirement dos dead hang"],
+  ["rotations à vide + cercles de bras", "échauffement épaules cercles de bras"],
+  ["pec au mur 30s", "étirement pectoraux au mur triceps"],
+  ["étirements doux à l'élastique", "étirements bras épaules élastique"],
+  ["barre en goblet ou haltère classique", "squat goblet haltère technique"],
+  ["squat poids de corps avec pause", "squat poids de corps pause technique"],
+  ["squat sauté sans charge", "squat sauté jump squat technique"],
+  ["fentes statiques sur place", "fentes statiques technique"],
+  ["step-up lent sur banc", "step up sur banc technique"],
+  ["pistol squat assisté", "pistol squat assisté technique"],
+  ["fentes bulgares avec haltères", "fentes bulgares haltères technique"],
+  ["leg press bilateral", "presse à cuisses technique"],
+  ["rdl avec haltères", "soulevé de terre roumain haltères technique"],
+  ["good morning avec élastique", "good morning élastique technique"],
+  ["rdl unilatéral", "soulevé de terre roumain unilatéral technique"],
+  ["box jump au sol", "sauts réception souple pliométrie technique"],
+  ["step-up lent et contrôlé", "step up sur banc technique"],
+  ["step-up avec saut", "step up sauté changement de jambe"],
+  ["mollets sur une marche", "mollets sur une marche poids de corps"],
+  ["mollets unilatéraux", "mollets unilatéraux sur marche technique"],
+  ["hip thrust avec haltère", "hip thrust haltère technique"],
+  ["glute bridge au sol", "pont fessier au sol glute bridge technique"],
+  ["hip thrust unilatéral", "hip thrust unilatéral technique"],
+  ["tractions assistées", "tractions assistées élastique technique"],
+  ["rowing avec haltères couché sur banc", "rowing haltères buste appuyé banc incliné"],
+  ["élastique de résistance tiré vers soi", "rowing élastique assis technique"],
+  ["rowing câble unilatéral", "rowing poulie basse unilatéral technique"],
+  ["shrugs à la barre", "shrugs barre technique"],
+  ["élévations d'épaules avec élastique", "shrugs élastique technique"],
+  ["superman au sol", "superman exercice lombaires au sol"],
+  ["good morning barre légère", "good morning barre technique"],
+  ["élastique accroché à hauteur visage", "face pull élastique technique"],
+  ["oiseau inversé avec haltères légers", "oiseau buste appuyé banc incliné haltères"],
+  ["face pull + rotation externe", "face pull rotation externe technique"],
+  ["élastique aux poignets", "bird dog élastique gainage"],
+  ["extension d'un seul membre", "bird dog débutant gainage"],
+  ["développé couché au sol", "floor press développé couché au sol"],
+  ["développé décliné pour cibler", "développé décliné technique"],
+  ["écarté avec élastique", "écarté élastique pectoraux"],
+  ["écarté câble croisé", "vis à vis poulie haute pectoraux technique"],
+  ["développé strict debout", "développé militaire debout technique"],
+  ["élastique accroché latéralement", "élévations latérales élastique"],
+  ["élévations câble pour tension", "élévation latérale poulie basse technique"],
+  ["curl incliné sur banc", "curl incliné haltères technique"],
+  ["extension poulie unilatérale", "extension triceps poulie unilatérale technique"],
+  ["curl marteau câble", "curl marteau poulie corde technique"],
+  ["curl marteau incliné", "curl marteau incliné haltères"],
+  ["jambes tendues + haltère sur les cuisses", "dips banc lestés jambes tendues"],
+  ["dips entre deux bancs", "dips entre deux bancs technique"],
+  ["push-up genoux ou sur plan incliné", "pompes sur les genoux débutant"],
+  ["archer push-up", "archer push up pompes technique"],
+  ["rowing barre yates", "rowing yates technique"],
+  ["tractions lestées", "tractions lestées technique"],
+  ["développé barre devant au multipower", "développé épaules multipower smith machine technique"]
+];
+function libExByName(name) {
+  var q = String(name || '').trim().toLowerCase();
+  if (!q) return null;
+  for (var gid in EXERCISE_LIBRARY) {
+    var list = EXERCISE_LIBRARY[gid].exercises;
+    for (var i = 0; i < list.length; i++) if (list[i].name.toLowerCase() === q) return list[i];
+  }
+  return null;
+}
+/* name : nom affiché ; fallbackOrig : exercice d'origine quand la variante n'est qu'un conseil (pas d'exercice propre) */
+function exVideoQuery(name, fallbackOrig) {
+  var n = String(name || '').trim(), low = n.toLowerCase();
+  var ex = libExByName(n);
+  if (ex) return ex.video || (ex.name + ' exercice musculation technique');
+  for (var v = 0; v < VARIANT_VIDEO.length; v++) {
+    if (low.indexOf(VARIANT_VIDEO[v][0]) !== -1) return VARIANT_VIDEO[v][1];
+  }
+  for (var k = 0; k < VARIANT_LIB_MAP.length; k++) {
+    if (low.indexOf(VARIANT_LIB_MAP[k][0].toLowerCase()) !== -1) {
+      var e2 = libExByName(VARIANT_LIB_MAP[k][1]);
+      if (e2) return e2.video || (e2.name + ' exercice musculation technique');
+    }
+  }
+  if (fallbackOrig && fallbackOrig !== n) return exVideoQuery(fallbackOrig, '');
+  if (PROGRAM_VIDEO[low]) return PROGRAM_VIDEO[low];
+  var short = n.split(',')[0].trim() || n;
+  return short + ' exercice musculation technique';
+}
+function exVideoBtnHTML(name, fallbackOrig, query) {
+  var q = encodeURIComponent(query || exVideoQuery(name, fallbackOrig));
   return '<a class="ex-video-btn" href="https://www.youtube.com/results?search_query=' + q + '" target="_blank" rel="noopener">\u25B6 VOIR UNE VID\u00c9O</a>';
 }
 
-function openSchema(exName) {
-  var data = getSchemaForExercise(exName);
-  if (!data) return;
+function openSchema(exName, origName) {
+  var sch = getSchemaWithFallback(exName, origName);
+  if (!sch) { try { showToast('Pas de schéma pour cet exercice', 'rgba(229,57,53,.9)'); } catch (e) {} return; }
+  var data = sch.data;
   document.getElementById('schema-ex-name').textContent = exName;
 
   var wrap = document.getElementById('schema-svg-wrap');
@@ -6011,8 +6164,11 @@ function openSchema(exName) {
   }
 
   var vEl = document.getElementById('schema-video');
-  if (vEl) vEl.innerHTML = exVideoBtnHTML(exName);
-  document.getElementById('schema-points').innerHTML = data.points.map(function(p,i) {
+  if (vEl) vEl.innerHTML = exVideoBtnHTML(exName, sch.fallback ? origName : '');
+  var note = sch.fallback
+    ? '<div class="schema-note" style="font-size:11px;line-height:1.5;color:var(--dim);margin:0 0 10px;padding:8px 10px;border:1px dashed var(--s4);border-radius:8px">\u2139\uFE0F Pas de sch\u00E9ma d\u00E9di\u00E9 pour cette variante : voici l\u2019exercice d\u2019origine (' + String(origName).replace(/[<>&]/g, '') + '), le mouvement est proche.</div>'
+    : '';
+  document.getElementById('schema-points').innerHTML = note + data.points.map(function(p,i) {
     return '<div class="schema-point"><div class="schema-point-num">'+(i+1)+'</div><div>'+p+'</div></div>';
   }).join('');
   document.getElementById('schema-modal').classList.add('show');
@@ -6023,20 +6179,30 @@ function closeSchema() {
   document.getElementById('schema-modal').classList.remove('show');
 }
 
+/* Nom de l'exercice d'une carte, SANS le badge « ✦ BIBLIO » ajouté après un remplacement par la bibliothèque */
+function schemaCardName(card) {
+  const el = card.querySelector('.ex-name');
+  if (!el) return '';
+  const c = el.cloneNode(true);
+  c.querySelectorAll('.lib-replaced-badge').forEach(b => b.remove());
+  return c.textContent.replace('✦ BIBLIO', '').trim();
+}
+
 function initSchemaButtons() {
   document.querySelectorAll('.card').forEach(card => {
     const nameEl = card.querySelector('.ex-name');
     const header = card.querySelector('.card-header');
     if (!nameEl || !header || header.querySelector('.schema-btn')) return;
     // Vérifier si un schéma existe pour cet exercice
-    if (!getSchemaForExercise(nameEl.textContent.trim())) return;
+    if (!getSchemaForExercise(schemaCardName(card))) return;
     const btn = document.createElement('button');
     btn.className   = 'schema-btn';
     btn.title       = 'Voir le schéma';
     btn.textContent = '\u{1F4D0}';
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
-      openSchema(card.querySelector('.ex-name').textContent.trim());
+      const vb = card.querySelector('.variantes-box');
+      openSchema(schemaCardName(card), vb ? vb.dataset.origName : '');
     });
     const focusBtn = header.querySelector('button');
     if (focusBtn) header.insertBefore(btn, focusBtn);
@@ -6069,7 +6235,8 @@ const EXERCISE_LIBRARY = {
           "Descente lente 3s, remontée explosive",
           "Genoux dans l'axe des orteils"
         ],
-        "tip": "Descente lente (3s), remontée explosive. Simule l'impulsion au saut. Haltère ou kettlebell contre la poitrine. Récup 75s."
+        "tip": "Descente lente (3s), remontée explosive. Simule l'impulsion au saut. Haltère ou kettlebell contre la poitrine. Récup 75s.",
+        "video": "squat goblet technique"
       },
       {
         "id": "squat_barre",
@@ -6083,7 +6250,8 @@ const EXERCISE_LIBRARY = {
           "Dos droit tout au long",
           "Descente jusqu'aux cuisses parallèles"
         ],
-        "tip": "Exercice roi du bas du corps. Charges plus lourdes qu'au goblet. Récup 90s."
+        "tip": "Exercice roi du bas du corps. Charges plus lourdes qu'au goblet. Récup 90s.",
+        "video": "squat barre technique"
       },
       {
         "id": "fentes_marchees",
@@ -6097,7 +6265,8 @@ const EXERCISE_LIBRARY = {
           "Genou avant à 90°, arrière effleure le sol",
           "Buste droit, regard devant"
         ],
-        "tip": "Imite les accélérations et changements de direction. Haltères en main. Récup 60s."
+        "tip": "Imite les accélérations et changements de direction. Haltères en main. Récup 60s.",
+        "video": "fentes marchées haltères technique"
       },
       {
         "id": "fentes_bulgares",
@@ -6111,7 +6280,8 @@ const EXERCISE_LIBRARY = {
           "Genou avant à 90°",
           "Amplitude maximale"
         ],
-        "tip": "Version plus intense des fentes. Excellent pour corriger les déséquilibres. Récup 75s."
+        "tip": "Version plus intense des fentes. Excellent pour corriger les déséquilibres. Récup 75s.",
+        "video": "fentes bulgares haltères technique"
       },
       {
         "id": "leg_press",
@@ -6125,7 +6295,8 @@ const EXERCISE_LIBRARY = {
           "Descente contrôlée jusqu'à 90°",
           "Commencer par la jambe faible"
         ],
-        "tip": "Une jambe à la fois pour corriger les déséquilibres droite/gauche. Récup 60s."
+        "tip": "Une jambe à la fois pour corriger les déséquilibres droite/gauche. Récup 60s.",
+        "video": "presse à cuisses unilatérale technique"
       },
       {
         "id": "rdl",
@@ -6139,7 +6310,8 @@ const EXERCISE_LIBRARY = {
           "Poussée des hanches en arrière",
           "Étirement ischio en bas"
         ],
-        "tip": "Renforce les ischio-jambiers, souvent sous-travaillés. Priorité prévention blessures. Récup 90s."
+        "tip": "Renforce les ischio-jambiers, souvent sous-travaillés. Priorité prévention blessures. Récup 90s.",
+        "video": "soulevé de terre roumain RDL technique"
       },
       {
         "id": "good_morning",
@@ -6153,7 +6325,8 @@ const EXERCISE_LIBRARY = {
           "Flexion hanches, dos plat",
           "Retour par contraction des ischio"
         ],
-        "tip": "Renforce la chaîne postérieure complète. Commencer léger. Récup 75s."
+        "tip": "Renforce la chaîne postérieure complète. Commencer léger. Récup 75s.",
+        "video": "good morning barre technique"
       },
       {
         "id": "leg_curl",
@@ -6167,7 +6340,8 @@ const EXERCISE_LIBRARY = {
           "Flexion complète jusqu'aux fesses",
           "Descente lente (3s)"
         ],
-        "tip": "Isolation pure des ischio. Complémentaire au RDL. Récup 60s."
+        "tip": "Isolation pure des ischio. Complémentaire au RDL. Récup 60s.",
+        "video": "leg curl allongé machine ischio technique"
       },
       {
         "id": "hip_thrust",
@@ -6181,13 +6355,14 @@ const EXERCISE_LIBRARY = {
           "Poussée explosive vers le haut",
           "Serrer les fessiers 1s en haut"
         ],
-        "tip": "Les fessiers sont le premier moteur de la puissance des jambes. Récup 60s."
+        "tip": "Les fessiers sont le premier moteur de la puissance des jambes. Récup 60s.",
+        "video": "hip thrust barre technique"
       },
       {
         "id": "stepup",
         "name": "Step-up Explosif",
         "equipment": "Haltères / Poids corps",
-        "focus": "Explosivité · Puissance unipodal",
+        "focus": "Explosivité · Puissance unipodale",
         "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Step_Ups/0.jpg",
         "rest": 45,
         "points": [
@@ -6195,7 +6370,8 @@ const EXERCISE_LIBRARY = {
           "Genou montant haut",
           "Descente contrôlée"
         ],
-        "tip": "Développe la puissance et l'équilibre sur une jambe. Récup 45s."
+        "tip": "Développe la puissance et l'équilibre sur une jambe. Récup 45s.",
+        "video": "step up explosif haltères technique"
       },
       {
         "id": "mollets_debout",
@@ -6209,7 +6385,8 @@ const EXERCISE_LIBRARY = {
           "Pause 1s en haut",
           "Descente lente 3s"
         ],
-        "tip": "Crucial pour les démarrages et la course. Récup 45s."
+        "tip": "Crucial pour les démarrages et la course. Récup 45s.",
+        "video": "extension mollets debout technique"
       },
       {
         "id": "mollets_assis",
@@ -6223,7 +6400,8 @@ const EXERCISE_LIBRARY = {
           "Amplitude complète",
           "4 séries de 15-20 reps"
         ],
-        "tip": "Complémentaire aux mollets debout. Le soléaire est actif genou fléchi. Récup 45s."
+        "tip": "Complémentaire aux mollets debout. Le soléaire est actif genou fléchi. Récup 45s.",
+        "video": "extension mollets assis machine technique"
       },
       {
         "id": "deadlift",
@@ -6237,7 +6415,218 @@ const EXERCISE_LIBRARY = {
           "Poussée sol par les jambes",
           "Barre contre les tibias"
         ],
-        "tip": "Exercice roi de la force globale. Technique irréprochable obligatoire. Récup 120s."
+        "tip": "Exercice roi de la force globale. Technique irréprochable obligatoire. Récup 120s.",
+        "video": "soulevé de terre conventionnel technique"
+      },
+      {
+        "id": "hack_squat",
+        "name": "Hack Squat",
+        "equipment": "Machine",
+        "focus": "Quadriceps · Fessiers",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hack_Squat/0.jpg",
+        "rest": 90,
+        "points": [
+          "Dos plaqué, pieds à largeur d'épaules",
+          "Descente contrôlée jusqu'à 90° ou plus",
+          "Pousse dans les talons, sans verrouiller les genoux"
+        ],
+        "tip": "Machine guidée : tu peux charger lourd en sécurité. Les pieds hauts sollicitent plus les fessiers. Récup 90s.",
+        "video": "hack squat machine technique"
+      },
+      {
+        "id": "leg_extension",
+        "name": "Leg Extension",
+        "equipment": "Machine",
+        "focus": "Quadriceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg",
+        "rest": 60,
+        "points": [
+          "Dos plaqué, genoux alignés avec l'axe de la machine",
+          "Extension complète, contraction 1s en haut",
+          "Descente lente 3s sans lâcher la charge"
+        ],
+        "tip": "Isole les quadriceps. Charge modérée et tempo lent : utile pour renforcer le genou. Récup 60s.",
+        "video": "leg extension machine quadriceps technique"
+      },
+      {
+        "id": "leg_curl_assis",
+        "name": "Leg Curl Assis",
+        "equipment": "Machine",
+        "focus": "Ischio-jambiers",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Leg_Curl/0.jpg",
+        "rest": 60,
+        "points": [
+          "Cuisses bien calées sous le coussin",
+          "Ramène les talons sous toi, sans décoller le dos",
+          "Retour lent 3s"
+        ],
+        "tip": "Complète le Leg Curl couché. Les ischios protègent le genou et les sprints. Récup 60s.",
+        "video": "leg curl assis machine technique"
+      },
+      {
+        "id": "squat_avant",
+        "name": "Squat Avant",
+        "equipment": "Barre",
+        "focus": "Quadriceps · Gainage",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Barbell_Squat/0.jpg",
+        "rest": 90,
+        "points": [
+          "Barre sur l'avant des épaules, coudes hauts",
+          "Buste bien vertical",
+          "Descente profonde, genoux dans l'axe des orteils"
+        ],
+        "tip": "Plus de quadriceps et de gainage que le squat classique, avec moins de charge. Coudes hauts : si la barre tombe, ils sont trop bas. Récup 90s.",
+        "video": "front squat squat avant barre technique"
+      },
+      {
+        "id": "fentes_arriere",
+        "name": "Fentes Arrière",
+        "equipment": "Haltères",
+        "focus": "Quadriceps · Fessiers",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Rear_Lunge/0.jpg",
+        "rest": 75,
+        "points": [
+          "Grand pas en arrière, buste droit",
+          "Genou arrière frôle le sol",
+          "Pousse dans le talon avant pour revenir"
+        ],
+        "tip": "Plus douces pour les genoux que les fentes avant. Bon exercice de stabilité pour les appuis du foot. Récup 75s.",
+        "video": "fentes arrière haltères technique"
+      },
+      {
+        "id": "sdt_jambes_tendues",
+        "name": "Soulevé de Terre Jambes Tendues",
+        "equipment": "Haltères",
+        "focus": "Ischio-jambiers · Fessiers · Lombaires",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Stiff-Legged_Dumbbell_Deadlift/0.jpg",
+        "rest": 75,
+        "points": [
+          "Jambes quasi tendues, genoux légèrement fléchis",
+          "Bassin vers l'arrière, haltères le long des jambes",
+          "Dos plat, remonte en serrant les fessiers"
+        ],
+        "tip": "Étirement maximal des ischios. Descends jusqu'à sentir l'étirement, pas plus bas que ton dos plat le permet. Récup 75s.",
+        "video": "soulevé de terre jambes tendues haltères technique"
+      },
+      {
+        "id": "sdt_sumo",
+        "name": "Soulevé de Terre Sumo",
+        "equipment": "Barre",
+        "focus": "Fessiers · Adducteurs · Ischio-jambiers",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sumo_Deadlift/0.jpg",
+        "rest": 120,
+        "points": [
+          "Pieds très écartés, pointes vers l'extérieur",
+          "Buste plus vertical qu'au conventionnel",
+          "Pousse le sol avec les jambes, verrouille avec les fessiers"
+        ],
+        "tip": "Moins de lombaires, plus de cuisses et de fessiers. Genoux dans l'axe des pieds. Récup 2 min.",
+        "video": "soulevé de terre sumo technique"
+      },
+      {
+        "id": "adducteurs",
+        "name": "Adducteurs Machine",
+        "equipment": "Machine",
+        "focus": "Adducteurs",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Thigh_Adductor/0.jpg",
+        "rest": 60,
+        "points": [
+          "Dos plaqué, jambes écartées au départ",
+          "Ramène les cuisses l'une vers l'autre sans à-coup",
+          "Retour lent, contrôlé"
+        ],
+        "tip": "Les adducteurs stabilisent le bassin et préviennent les claquages. Charge modérée. Récup 60s.",
+        "video": "machine adducteurs technique"
+      },
+      {
+        "id": "abducteurs",
+        "name": "Abducteurs Machine",
+        "equipment": "Machine",
+        "focus": "Fessiers (moyen) · Abducteurs",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Thigh_Abductor/0.jpg",
+        "rest": 60,
+        "points": [
+          "Dos plaqué, genoux contre les coussins",
+          "Écarte les cuisses sans bouger le bassin",
+          "Retour lent, ne laisse pas retomber les poids"
+        ],
+        "tip": "Cible le moyen fessier, clé de la stabilité du bassin en course. Penche un peu le buste en avant pour plus de fessiers. Récup 60s.",
+        "video": "machine abducteurs fessiers technique"
+      },
+      {
+        "id": "pont_fessier",
+        "name": "Pont Fessier",
+        "equipment": "Poids de corps",
+        "focus": "Fessiers · Ischio-jambiers",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butt_Lift_Bridge/0.jpg",
+        "rest": 45,
+        "points": [
+          "Dos au sol, pieds près des fesses",
+          "Monte le bassin jusqu'à l'alignement épaules-genoux",
+          "Serre les fessiers 1s en haut"
+        ],
+        "tip": "Version simple du hip thrust, parfaite en échauffement ou en finition. Ajoute un haltère sur le bassin pour progresser. Récup 45s.",
+        "video": "pont fessier au sol glute bridge technique"
+      },
+      {
+        "id": "pont_fessier_uni",
+        "name": "Pont Fessier Unilatéral",
+        "equipment": "Poids de corps",
+        "focus": "Fessiers · Stabilité du bassin",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single_Leg_Glute_Bridge/0.jpg",
+        "rest": 45,
+        "points": [
+          "Une jambe tendue, l'autre pied au sol",
+          "Bassin à plat : il ne doit pas pivoter",
+          "Monte avec le talon, serre le fessier"
+        ],
+        "tip": "Corrige les déséquilibres gauche-droite. Fais le même nombre de reps de chaque côté. Récup 45s.",
+        "video": "pont fessier unilatéral une jambe technique"
+      },
+      {
+        "id": "kickback_fessier",
+        "name": "Kickback Fessier Câble",
+        "equipment": "Poulie + sangle de cheville",
+        "focus": "Fessiers",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Legged_Cable_Kickback/0.jpg",
+        "rest": 60,
+        "points": [
+          "Sangle à la cheville, mains sur la machine",
+          "Pousse la jambe vers l'arrière sans cambrer",
+          "Contraction 1s en haut, retour lent"
+        ],
+        "tip": "Isolation du grand fessier. Garde le dos plat : le mouvement vient de la hanche. Récup 60s.",
+        "video": "kickback fessier poulie basse technique"
+      },
+      {
+        "id": "mollets_presse",
+        "name": "Mollets à la Presse",
+        "equipment": "Machine (presse à cuisses)",
+        "focus": "Mollets",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Calf_Press_On_The_Leg_Press_Machine/0.jpg",
+        "rest": 45,
+        "points": [
+          "Seules les pointes de pieds sur la plateforme",
+          "Descends les talons pour étirer le mollet",
+          "Monte haut sur la pointe, pause 1s"
+        ],
+        "tip": "Permet de charger lourd sans fatiguer le dos. Amplitude complète : c'est l'étirement qui fait grossir. Récup 45s.",
+        "video": "mollets à la presse à cuisses technique"
+      },
+      {
+        "id": "squat_multipower",
+        "name": "Squat Multipower",
+        "equipment": "Multipower (Smith)",
+        "focus": "Quadriceps · Fessiers",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Squat/0.jpg",
+        "rest": 90,
+        "points": [
+          "Pieds légèrement en avant de la barre",
+          "Dos droit, descends jusqu'aux cuisses parallèles",
+          "Pousse dans les talons"
+        ],
+        "tip": "Barre guidée : bon pour apprendre le mouvement ou finir une série en sécurité. Récup 90s.",
+        "video": "squat multipower smith machine technique"
       }
     ]
   },
@@ -6258,7 +6647,8 @@ const EXERCISE_LIBRARY = {
           "Tirer vers le sternum",
           "Coudes bas et vers l'arrière"
         ],
-        "tip": "Renforce le grand dorsal et stabilise les épaules. Récup 75s."
+        "tip": "Renforce le grand dorsal et stabilise les épaules. Récup 75s.",
+        "video": "tirage vertical poulie haute prise large technique"
       },
       {
         "id": "tirage_horiz",
@@ -6272,7 +6662,8 @@ const EXERCISE_LIBRARY = {
           "Serrer les omoplates en fin",
           "Ne pas basculer le buste"
         ],
-        "tip": "Corrige la posture voûtée du travail assis. Récup 60s."
+        "tip": "Corrige la posture voûtée du travail assis. Récup 60s.",
+        "video": "tirage horizontal poulie basse assis technique"
       },
       {
         "id": "rowing_halt",
@@ -6286,7 +6677,8 @@ const EXERCISE_LIBRARY = {
           "Coude tiré haut",
           "Commencer par le côté faible"
         ],
-        "tip": "Corrige les déséquilibres côté dominant. Récup 60s."
+        "tip": "Corrige les déséquilibres côté dominant. Récup 60s.",
+        "video": "rowing haltère unilatéral technique"
       },
       {
         "id": "rowing_barre",
@@ -6300,7 +6692,8 @@ const EXERCISE_LIBRARY = {
           "Barre tirée vers le nombril",
           "Contraction des omoplates"
         ],
-        "tip": "Exercice de masse pour l'épaisseur du dos. Récup 90s."
+        "tip": "Exercice de masse pour l'épaisseur du dos. Récup 90s.",
+        "video": "rowing barre buste penché technique"
       },
       {
         "id": "tirage_neutre",
@@ -6314,7 +6707,8 @@ const EXERCISE_LIBRARY = {
           "Coudes près du corps",
           "Contraction en bas"
         ],
-        "tip": "Plus naturel pour les épaules. Idéal en fin de séance dos. Récup 75s."
+        "tip": "Plus naturel pour les épaules. Idéal en fin de séance dos. Récup 75s.",
+        "video": "tirage vertical prise neutre technique"
       },
       {
         "id": "tractions",
@@ -6328,7 +6722,8 @@ const EXERCISE_LIBRARY = {
           "Corps gainé, pas de balancement",
           "Menton au-dessus de la barre"
         ],
-        "tip": "Exercice roi du dos au poids de corps. Ajouter du lest si trop facile. Récup 90s."
+        "tip": "Exercice roi du dos au poids de corps. Ajouter du lest si trop facile. Récup 90s.",
+        "video": "tractions pronation technique"
       },
       {
         "id": "shrugs",
@@ -6342,7 +6737,8 @@ const EXERCISE_LIBRARY = {
           "Maintien 1s en haut",
           "Pas de rotation des épaules"
         ],
-        "tip": "Absorbe les chocs sur les jeux de tête et contacts. Récup 45s."
+        "tip": "Absorbe les chocs sur les jeux de tête et contacts. Récup 45s.",
+        "video": "shrugs haltères trapèzes technique"
       },
       {
         "id": "lombaires",
@@ -6356,7 +6752,8 @@ const EXERCISE_LIBRARY = {
           "Dos droit, pas d'hyperextension",
           "Poids de corps d'abord"
         ],
-        "tip": "Renforce le bas du dos, très sollicité au quotidien. Récup 60s."
+        "tip": "Renforce le bas du dos, très sollicité au quotidien. Récup 60s.",
+        "video": "extensions lombaires banc technique"
       },
       {
         "id": "face_pull",
@@ -6370,7 +6767,8 @@ const EXERCISE_LIBRARY = {
           "Tirer vers le front en ouvrant les coudes",
           "Rotation externe"
         ],
-        "tip": "Protège la coiffe des rotateurs et améliore la posture. Récup 45s."
+        "tip": "Protège la coiffe des rotateurs et améliore la posture. Récup 45s.",
+        "video": "face pull poulie technique"
       },
       {
         "id": "bird_dog",
@@ -6384,7 +6782,128 @@ const EXERCISE_LIBRARY = {
           "Maintien 2s, colonne neutre",
           "Alterner les côtés"
         ],
-        "tip": "Coordination bras/jambe opposés = pattern de course. Récup 30s."
+        "tip": "Coordination bras/jambe opposés = pattern de course. Récup 30s.",
+        "video": "bird dog exercice gainage technique"
+      },
+      {
+        "id": "rowing_tbar",
+        "name": "Rowing T-Bar",
+        "equipment": "Barre en T / landmine",
+        "focus": "Dos épais · Rhomboïdes · Trapèzes",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/T-Bar_Row_with_Handle/0.jpg",
+        "rest": 90,
+        "points": [
+          "Buste incliné à 45°, dos plat",
+          "Tire vers le bas du sternum",
+          "Serre les omoplates 1s en haut"
+        ],
+        "tip": "Excellent pour l'épaisseur du dos. Ne balance pas le buste : la charge doit venir du dos. Récup 90s.",
+        "video": "rowing t-bar technique"
+      },
+      {
+        "id": "tirage_serre",
+        "name": "Tirage Poitrine Prise Serrée",
+        "equipment": "Poulie haute",
+        "focus": "Grand dorsal · Biceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Front_Lat_Pulldown/0.jpg",
+        "rest": 75,
+        "points": [
+          "Prise étroite, paumes vers toi ou neutre",
+          "Tire la barre vers le haut de la poitrine",
+          "Coudes vers le bas et l'arrière"
+        ],
+        "tip": "Plus d'amplitude et de travail des dorsaux bas. Pas de balancement du buste. Récup 75s.",
+        "video": "tirage vertical prise serrée technique"
+      },
+      {
+        "id": "pullover_poulie",
+        "name": "Pull-over Poulie (Bras Tendus)",
+        "equipment": "Poulie haute",
+        "focus": "Grand dorsal",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Straight-Arm_Pulldown/0.jpg",
+        "rest": 60,
+        "points": [
+          "Bras presque tendus, léger pli des coudes",
+          "Tire la barre vers les cuisses en arc de cercle",
+          "Contracte les dorsaux en bas, retour lent"
+        ],
+        "tip": "Isole le grand dorsal sans fatiguer les biceps. Idéal en début de séance dos. Récup 60s.",
+        "video": "pull over poulie haute bras tendus technique"
+      },
+      {
+        "id": "tractions_supination",
+        "name": "Tractions Supination",
+        "equipment": "Barre fixe",
+        "focus": "Dorsaux · Biceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chin-Up/0.jpg",
+        "rest": 90,
+        "points": [
+          "Paumes vers toi, mains à largeur d'épaules",
+          "Monte le menton au-dessus de la barre",
+          "Descente lente 3s, bras tendus en bas"
+        ],
+        "tip": "Plus facile que la prise pronation grâce aux biceps. Bon point de départ pour progresser vers les tractions. Récup 90s.",
+        "video": "tractions supination chin up technique"
+      },
+      {
+        "id": "rowing_inverse",
+        "name": "Rowing Inversé",
+        "equipment": "Barre basse / TRX",
+        "focus": "Dos · Biceps · Gainage",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Inverted_Row/0.jpg",
+        "rest": 75,
+        "points": [
+          "Corps gainé en planche, talons au sol",
+          "Tire la poitrine vers la barre",
+          "Serre les omoplates en haut"
+        ],
+        "tip": "Poids de corps : plus tu allonges les jambes, plus c'est difficile. Excellent pour la posture. Récup 75s.",
+        "video": "rowing inversé australian pull up technique"
+      },
+      {
+        "id": "rack_pull",
+        "name": "Rack Pull",
+        "equipment": "Barre + rack",
+        "focus": "Trapèzes · Lombaires · Fessiers",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rack_Pulls/0.jpg",
+        "rest": 120,
+        "points": [
+          "Barre à hauteur de genoux sur les supports",
+          "Dos plat, poitrine ouverte",
+          "Remonte en poussant les hanches vers l'avant"
+        ],
+        "tip": "Soulevé de terre partiel : charges lourdes avec moins d'amplitude. Évite d'hyper-cambrer en haut. Récup 2 min.",
+        "video": "rack pull technique"
+      },
+      {
+        "id": "superman",
+        "name": "Superman",
+        "equipment": "Poids de corps",
+        "focus": "Lombaires · Fessiers",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Superman/0.jpg",
+        "rest": 45,
+        "points": [
+          "Allongé sur le ventre, bras tendus devant",
+          "Décolle bras et jambes en même temps",
+          "Tiens 2s en haut, redescends lentement"
+        ],
+        "tip": "Renforce la chaîne postérieure. Regarde le sol pour garder la nuque neutre. Récup 45s.",
+        "video": "superman exercice lombaires au sol"
+      },
+      {
+        "id": "rowing_machine",
+        "name": "Rowing Machine Assis",
+        "equipment": "Machine",
+        "focus": "Dos épais · Rhomboïdes",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leverage_Iso_Row/0.jpg",
+        "rest": 75,
+        "points": [
+          "Poitrine contre le support, dos droit",
+          "Tire les poignées vers les côtés du buste",
+          "Serre les omoplates, retour lent"
+        ],
+        "tip": "Le support de poitrine retire la triche : le dos travaille seul. Bon pour finir une séance. Récup 75s.",
+        "video": "rowing machine assis dos technique"
       }
     ]
   },
@@ -6405,7 +6924,8 @@ const EXERCISE_LIBRARY = {
           "Descente lente 3s",
           "Poussée explosive vers le haut"
         ],
-        "tip": "Amplitude plus grande qu'avec la barre. Plus stable pour les épaules. Récup 90s."
+        "tip": "Amplitude plus grande qu'avec la barre. Plus stable pour les épaules. Récup 90s.",
+        "video": "développé couché haltères technique"
       },
       {
         "id": "dev_couche_bar",
@@ -6419,7 +6939,8 @@ const EXERCISE_LIBRARY = {
           "Descente contrôlée jusqu'au sternum",
           "Poussée explosive"
         ],
-        "tip": "Exercice de force de base. Récup 90-120s pour les séries lourdes."
+        "tip": "Exercice de force de base. Récup 90-120s pour les séries lourdes.",
+        "video": "développé couché barre technique"
       },
       {
         "id": "dev_incline",
@@ -6433,7 +6954,8 @@ const EXERCISE_LIBRARY = {
           "Haltères alignés avec les pecs",
           "Descente contrôlée"
         ],
-        "tip": "Cible le haut des pectoraux, zone souvent négligée. Récup 75s."
+        "tip": "Cible le haut des pectoraux, zone souvent négligée. Récup 75s.",
+        "video": "développé incliné haltères technique"
       },
       {
         "id": "ecarte_cable",
@@ -6447,7 +6969,8 @@ const EXERCISE_LIBRARY = {
           "Bras quasi tendus",
           "Contraction forte en haut"
         ],
-        "tip": "Finition des pecs. Stretch à fond en position basse. Récup 60s."
+        "tip": "Finition des pecs. Stretch à fond en position basse. Récup 60s.",
+        "video": "écarté poulie basse pectoraux technique"
       },
       {
         "id": "ecarte_halt",
@@ -6461,7 +6984,8 @@ const EXERCISE_LIBRARY = {
           "Descente jusqu'à l'étirement",
           "Remonter en arc de cercle"
         ],
-        "tip": "Excellent pour l'étirement des pecs. Charge légère, amplitude complète. Récup 60s."
+        "tip": "Excellent pour l'étirement des pecs. Charge légère, amplitude complète. Récup 60s.",
+        "video": "écarté couché haltères technique"
       },
       {
         "id": "pushup",
@@ -6475,7 +6999,8 @@ const EXERCISE_LIBRARY = {
           "Coudes à 45° du corps",
           "Poitrine effleure le sol"
         ],
-        "tip": "Exercice de base utilisable partout. Ajouter du lest si trop facile. Récup 45s."
+        "tip": "Exercice de base utilisable partout. Ajouter du lest si trop facile. Récup 45s.",
+        "video": "pompes technique parfaite"
       },
       {
         "id": "pec_deck",
@@ -6489,7 +7014,8 @@ const EXERCISE_LIBRARY = {
           "Amplitude complète",
           "Contraction 1s en fermeture"
         ],
-        "tip": "Isolation des pecs sans solliciter les stabilisateurs. Idéal en finition. Récup 60s."
+        "tip": "Isolation des pecs sans solliciter les stabilisateurs. Idéal en finition. Récup 60s.",
+        "video": "pec deck butterfly machine technique"
       },
       {
         "id": "dips",
@@ -6503,7 +7029,158 @@ const EXERCISE_LIBRARY = {
           "Descendre jusqu'à 90° au coude",
           "Poussée explosive"
         ],
-        "tip": "Buste légèrement penché en avant pour cibler les pecs. Récup 60s."
+        "tip": "Buste légèrement penché en avant pour cibler les pecs. Récup 60s.",
+        "video": "dips sur banc technique"
+      },
+      {
+        "id": "dev_decline_barre",
+        "name": "Développé Décliné Barre",
+        "equipment": "Barre + banc décliné",
+        "focus": "Pectoraux (bas) · Triceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Barbell_Bench_Press/0.jpg",
+        "rest": 90,
+        "points": [
+          "Pieds bien calés, dos plaqué au banc",
+          "Descends la barre au bas des pecs",
+          "Pousse sans verrouiller brutalement les coudes"
+        ],
+        "tip": "Cible le bas des pectoraux. Charge souvent plus lourde qu'au développé couché : demande un pareur. Récup 90s.",
+        "video": "développé décliné barre technique"
+      },
+      {
+        "id": "dev_decline_halt",
+        "name": "Développé Décliné Haltères",
+        "equipment": "Haltères + banc décliné",
+        "focus": "Pectoraux (bas) · Triceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Dumbbell_Bench_Press/0.jpg",
+        "rest": 90,
+        "points": [
+          "Haltères au niveau des pecs, coudes à 45°",
+          "Monte en rapprochant légèrement les haltères",
+          "Descente lente 3s"
+        ],
+        "tip": "Plus d'amplitude et d'indépendance des bras qu'à la barre. Récup 90s.",
+        "video": "développé décliné haltères technique"
+      },
+      {
+        "id": "dev_incline_barre",
+        "name": "Développé Incliné Barre",
+        "equipment": "Barre + banc incliné",
+        "focus": "Pectoraux (haut) · Épaules · Triceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg",
+        "rest": 90,
+        "points": [
+          "Banc incliné à 30°, pas plus",
+          "Descends la barre sur le haut de la poitrine",
+          "Pousse en ligne légèrement diagonale"
+        ],
+        "tip": "Haut des pectoraux. Au-delà de 30-35°, les épaules prennent le relais. Récup 90s.",
+        "video": "développé incliné barre technique"
+      },
+      {
+        "id": "chest_press",
+        "name": "Chest Press Machine",
+        "equipment": "Machine",
+        "focus": "Pectoraux · Triceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Bench_Press/0.jpg",
+        "rest": 75,
+        "points": [
+          "Dos plaqué, poignées à hauteur de poitrine",
+          "Pousse sans décoller les épaules du dossier",
+          "Retour lent, étire les pecs"
+        ],
+        "tip": "Guidé et sûr : idéal pour finir de fatiguer les pecs ou apprendre le mouvement. Récup 75s.",
+        "video": "chest press machine pectoraux technique"
+      },
+      {
+        "id": "ecarte_incline",
+        "name": "Écarté Incliné Haltères",
+        "equipment": "Haltères + banc incliné",
+        "focus": "Pectoraux (haut)",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Flyes/0.jpg",
+        "rest": 60,
+        "points": [
+          "Coudes légèrement fléchis, fixes",
+          "Ouvre les bras en arc jusqu'à l'étirement",
+          "Ramène en serrant les pecs comme pour un câlin"
+        ],
+        "tip": "Poids léger : le but est l'étirement, pas la charge. Récup 60s.",
+        "video": "écarté incliné haltères technique"
+      },
+      {
+        "id": "pullover_halt",
+        "name": "Pull-over Haltère",
+        "equipment": "Haltère + banc",
+        "focus": "Pectoraux · Grand dorsal",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent-Arm_Dumbbell_Pullover/0.jpg",
+        "rest": 60,
+        "points": [
+          "Haltère à deux mains au-dessus de la poitrine",
+          "Descends derrière la tête, coudes légèrement fléchis",
+          "Remonte en contractant les pecs"
+        ],
+        "tip": "Ouvre la cage thoracique. Reste sur une amplitude confortable pour les épaules. Récup 60s.",
+        "video": "pull over haltère pectoraux technique"
+      },
+      {
+        "id": "dips_pecs",
+        "name": "Dips aux Barres (Pecs)",
+        "equipment": "Barres parallèles",
+        "focus": "Pectoraux (bas) · Triceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Chest_Version/0.jpg",
+        "rest": 90,
+        "points": [
+          "Buste penché en avant, coudes écartés",
+          "Descends jusqu'à ressentir l'étirement des pecs",
+          "Pousse sans verrouiller les coudes"
+        ],
+        "tip": "Penché en avant = pecs. Si ça tire dans l'épaule, réduis l'amplitude. Récup 90s.",
+        "video": "dips barres parallèles pectoraux technique"
+      },
+      {
+        "id": "vis_a_vis",
+        "name": "Vis-à-vis Poulie Haute",
+        "equipment": "Poulies hautes",
+        "focus": "Pectoraux (bas et intérieur)",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crossover/0.jpg",
+        "rest": 60,
+        "points": [
+          "Un pas en avant, buste légèrement penché",
+          "Ramène les mains devant le bassin, bras presque tendus",
+          "Serre les pecs 1s au centre"
+        ],
+        "tip": "Tension constante sur les pecs. Garde les coudes fixes, ne transforme pas en développé. Récup 60s.",
+        "video": "vis à vis poulie haute pectoraux technique"
+      },
+      {
+        "id": "pompes_mains_surelevees",
+        "name": "Pompes Mains Surélevées",
+        "equipment": "Banc / marche",
+        "focus": "Pectoraux · Épaules · Triceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Push-Up/0.jpg",
+        "rest": 45,
+        "points": [
+          "Mains sur un banc, corps en planche",
+          "Poitrine vers le banc, coudes à 45°",
+          "Pousse jusqu'à tendre les bras"
+        ],
+        "tip": "Version plus facile des pompes : plus tu montes les mains, plus c'est léger. Récup 45s.",
+        "video": "pompes inclinées mains surélevées technique"
+      },
+      {
+        "id": "pompes_pieds_sureleves",
+        "name": "Pompes Pieds Surélevés",
+        "equipment": "Banc / marche",
+        "focus": "Pectoraux (haut) · Épaules",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Decline_Push-Up/0.jpg",
+        "rest": 60,
+        "points": [
+          "Pieds sur un banc, mains au sol",
+          "Corps gainé, ne creuse pas le dos",
+          "Descends la poitrine entre les mains"
+        ],
+        "tip": "Plus difficile que les pompes classiques : plus de poids sur les épaules et le haut des pecs. Récup 60s.",
+        "video": "pompes déclinées pieds surélevés technique"
       }
     ]
   },
@@ -6524,7 +7201,8 @@ const EXERCISE_LIBRARY = {
           "Poussée verticale sans cambrer",
           "Assis pour isoler"
         ],
-        "tip": "Épaules fortes et stables, utiles à tous les mouvements de poussée. Récup 75s."
+        "tip": "Épaules fortes et stables, utiles à tous les mouvements de poussée. Récup 75s.",
+        "video": "développé militaire haltères assis technique"
       },
       {
         "id": "dev_mil_barre",
@@ -6538,7 +7216,8 @@ const EXERCISE_LIBRARY = {
           "Poussée verticale",
           "Ne pas cambrer les lombaires"
         ],
-        "tip": "Version barre pour charger plus lourd. Récup 90s."
+        "tip": "Version barre pour charger plus lourd. Récup 90s.",
+        "video": "développé militaire barre technique"
       },
       {
         "id": "elev_lat",
@@ -6552,7 +7231,8 @@ const EXERCISE_LIBRARY = {
           "Montée jusqu'à l'horizontale",
           "Petit doigt vers le haut"
         ],
-        "tip": "Charge légère, mouvement strict. Pas d'élan avec le buste. Récup 45s."
+        "tip": "Charge légère, mouvement strict. Pas d'élan avec le buste. Récup 45s.",
+        "video": "élévations latérales haltères technique"
       },
       {
         "id": "elev_front",
@@ -6566,7 +7246,8 @@ const EXERCISE_LIBRARY = {
           "Bras tendus ou légèrement fléchis",
           "Alterner ou simultané"
         ],
-        "tip": "Cible l'avant des épaules. Souvent déjà travaillé au développé, ne pas surcharger. Récup 45s."
+        "tip": "Cible l'avant des épaules. Souvent déjà travaillé au développé, ne pas surcharger. Récup 45s.",
+        "video": "élévations frontales haltères technique"
       },
       {
         "id": "oiseau_inv",
@@ -6580,7 +7261,8 @@ const EXERCISE_LIBRARY = {
           "Bras légèrement fléchis",
           "Élévation latérale vers l'arrière"
         ],
-        "tip": "Arrière des épaules souvent négligé. Crucial pour la posture. Récup 45s."
+        "tip": "Arrière des épaules souvent négligé. Crucial pour la posture. Récup 45s.",
+        "video": "oiseau haltères deltoïdes postérieurs technique"
       },
       {
         "id": "arnold_press",
@@ -6594,7 +7276,8 @@ const EXERCISE_LIBRARY = {
           "Rotation en montant",
           "Finir paumes vers l'extérieur"
         ],
-        "tip": "Travaille les 3 faisceaux des deltoïdes. Mouvement de rotation complet. Récup 75s."
+        "tip": "Travaille les 3 faisceaux des deltoïdes. Mouvement de rotation complet. Récup 75s.",
+        "video": "arnold press technique"
       },
       {
         "id": "face_pull_ep",
@@ -6608,7 +7291,128 @@ const EXERCISE_LIBRARY = {
           "Tirer vers le front en ouvrant les coudes",
           "Rotation externe"
         ],
-        "tip": "Essentiel pour la santé des épaules et prévention blessures. Récup 45s."
+        "tip": "Essentiel pour la santé des épaules et prévention blessures. Récup 45s.",
+        "video": "face pull poulie technique"
+      },
+      {
+        "id": "elev_lat_cable",
+        "name": "Élévations Latérales Câble",
+        "equipment": "Poulie basse",
+        "focus": "Deltoïde moyen",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Low-Pulley_Deltoid_Raise/0.jpg",
+        "rest": 60,
+        "points": [
+          "Poulie basse, bras opposé à la machine",
+          "Monte le bras sur le côté jusqu'à l'épaule",
+          "Descente lente, sans relâcher la tension"
+        ],
+        "tip": "Tension constante qu'on n'a pas avec les haltères. Charge légère, mouvement propre. Récup 60s.",
+        "video": "élévation latérale poulie basse technique"
+      },
+      {
+        "id": "dev_epaules_machine",
+        "name": "Développé Épaules Machine",
+        "equipment": "Machine",
+        "focus": "Épaules · Triceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Shoulder_Military_Press/0.jpg",
+        "rest": 75,
+        "points": [
+          "Dos plaqué, poignées à hauteur d'épaules",
+          "Pousse vers le haut sans cambrer",
+          "Descente lente jusqu'aux oreilles"
+        ],
+        "tip": "Guidé : parfait pour charger sans te soucier de l'équilibre. Récup 75s.",
+        "video": "développé épaules machine technique"
+      },
+      {
+        "id": "tirage_menton",
+        "name": "Tirage Menton Barre",
+        "equipment": "Barre",
+        "focus": "Épaules · Trapèzes",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Upright_Barbell_Row/0.jpg",
+        "rest": 75,
+        "points": [
+          "Prise un peu plus large que les épaules",
+          "Monte la barre le long du corps jusqu'à la poitrine",
+          "Coudes plus hauts que les mains, sans dépasser les épaules"
+        ],
+        "tip": "Épaules et trapèzes. Si ça pince dans l'épaule, arrête à mi-poitrine. Récup 75s.",
+        "video": "tirage menton barre technique"
+      },
+      {
+        "id": "pec_deck_inverse",
+        "name": "Pec Deck Inversé",
+        "equipment": "Machine",
+        "focus": "Deltoïde postérieur · Haut du dos",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Machine_Flyes/0.jpg",
+        "rest": 60,
+        "points": [
+          "Poitrine contre le dossier",
+          "Ouvre les bras en arrière, coudes à hauteur d'épaules",
+          "Serre les omoplates 1s"
+        ],
+        "tip": "Épaules arrière et posture : bon antidote au travail devant l'écran. Charge légère. Récup 60s.",
+        "video": "pec deck inversé deltoïdes postérieurs technique"
+      },
+      {
+        "id": "rotation_externe",
+        "name": "Rotation Externe Élastique",
+        "equipment": "Élastique",
+        "focus": "Coiffe des rotateurs",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/External_Rotation_with_Band/0.jpg",
+        "rest": 45,
+        "points": [
+          "Coude collé au corps, plié à 90°",
+          "Écarte l'avant-bras vers l'extérieur",
+          "Retour lent, sans déplacer le coude"
+        ],
+        "tip": "Protège l'épaule. Très léger : à faire en échauffement ou en fin de séance. Récup 45s.",
+        "video": "rotation externe épaule élastique technique"
+      },
+      {
+        "id": "band_pull_apart",
+        "name": "Band Pull-Apart",
+        "equipment": "Élastique",
+        "focus": "Deltoïde postérieur · Haut du dos",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Band_Pull_Apart/0.jpg",
+        "rest": 45,
+        "points": [
+          "Bras tendus devant, élastique en main",
+          "Écarte les mains jusqu'à la poitrine",
+          "Serre les omoplates 1s"
+        ],
+        "tip": "Simple et efficace pour la posture. Idéal en échauffement ou entre deux séries de développé. Récup 45s.",
+        "video": "band pull apart élastique technique"
+      },
+      {
+        "id": "elev_lat_assis",
+        "name": "Élévations Latérales Assis",
+        "equipment": "Haltères + banc",
+        "focus": "Deltoïde moyen",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Side_Lateral_Raise/0.jpg",
+        "rest": 60,
+        "points": [
+          "Assis, dos droit, haltères le long du corps",
+          "Monte les coudes sur les côtés jusqu'à l'épaule",
+          "Descente lente 2-3s"
+        ],
+        "tip": "Assis, tu ne peux plus tricher avec les jambes : l'épaule fait tout le travail. Récup 60s.",
+        "video": "élévations latérales assis haltères technique"
+      },
+      {
+        "id": "dev_epaules_multipower",
+        "name": "Développé Épaules Multipower",
+        "equipment": "Multipower (Smith)",
+        "focus": "Épaules · Triceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Smith_Machine_Overhead_Shoulder_Press/0.jpg",
+        "rest": 75,
+        "points": [
+          "Banc droit ou dossier presque vertical",
+          "Descends la barre jusqu'au menton",
+          "Pousse sans verrouiller les coudes"
+        ],
+        "tip": "Barre guidée : tu peux te concentrer sur la poussée. Récup 75s.",
+        "video": "développé épaules multipower smith machine technique"
       }
     ]
   },
@@ -6629,7 +7433,8 @@ const EXERCISE_LIBRARY = {
           "Rotation du poignet en montant",
           "Alterner les bras"
         ],
-        "tip": "Supination du poignet maximise la contraction du biceps. Récup 60s."
+        "tip": "Supination du poignet maximise la contraction du biceps. Récup 60s.",
+        "video": "curl haltères alterné technique"
       },
       {
         "id": "curl_barre",
@@ -6643,7 +7448,8 @@ const EXERCISE_LIBRARY = {
           "Grip légèrement plus large que les épaules",
           "Contraction forte en haut"
         ],
-        "tip": "Permet de charger plus lourd qu'avec les haltères. Récup 75s."
+        "tip": "Permet de charger plus lourd qu'avec les haltères. Récup 75s.",
+        "video": "curl barre biceps technique"
       },
       {
         "id": "curl_marteau",
@@ -6657,7 +7463,8 @@ const EXERCISE_LIBRARY = {
           "Coudes fixes",
           "Renforce l'avant-bras"
         ],
-        "tip": "Idéal pour l'avant-bras et la préhension. Récup 60s."
+        "tip": "Idéal pour l'avant-bras et la préhension. Récup 60s.",
+        "video": "curl marteau haltères technique"
       },
       {
         "id": "curl_cable",
@@ -6671,7 +7478,8 @@ const EXERCISE_LIBRARY = {
           "Coudes fixes",
           "Contraction maximale en haut"
         ],
-        "tip": "La tension du câble reste constante contrairement aux haltères. Récup 60s."
+        "tip": "La tension du câble reste constante contrairement aux haltères. Récup 60s.",
+        "video": "curl biceps poulie basse technique"
       },
       {
         "id": "curl_concentre",
@@ -6685,7 +7493,8 @@ const EXERCISE_LIBRARY = {
           "Mouvement lent et contrôlé",
           "Contraction maximale en haut"
         ],
-        "tip": "Isolation totale du biceps. Bon exercice de finition. Récup 60s."
+        "tip": "Isolation totale du biceps. Bon exercice de finition. Récup 60s.",
+        "video": "curl concentré haltère technique"
       },
       {
         "id": "curl_pupitre",
@@ -6699,7 +7508,98 @@ const EXERCISE_LIBRARY = {
           "Descente contrôlée jusqu'à extension complète",
           "Pas d'élan"
         ],
-        "tip": "Élimine totalement la triche. Excellent pour le chef long du biceps. Récup 60s."
+        "tip": "Élimine totalement la triche. Excellent pour le chef long du biceps. Récup 60s.",
+        "video": "curl pupitre technique"
+      },
+      {
+        "id": "curl_incline",
+        "name": "Curl Incliné",
+        "equipment": "Haltères + banc incliné",
+        "focus": "Biceps (chef long)",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Curl/0.jpg",
+        "rest": 60,
+        "points": [
+          "Dos plaqué au banc incliné à 45-60°",
+          "Bras pendants derrière le corps",
+          "Monte sans balancer les épaules"
+        ],
+        "tip": "Étire les biceps en position basse : très efficace pour la masse. Charge plus légère qu'au curl debout. Récup 60s.",
+        "video": "curl incliné haltères technique"
+      },
+      {
+        "id": "curl_inverse",
+        "name": "Curl Inversé",
+        "equipment": "Barre",
+        "focus": "Brachio-radial · Avant-bras",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Barbell_Curl/0.jpg",
+        "rest": 60,
+        "points": [
+          "Prise en pronation (paumes vers le bas)",
+          "Coudes collés au corps",
+          "Poignets droits, montée contrôlée"
+        ],
+        "tip": "Renforce l'avant-bras et la poigne. Charge nettement plus légère qu'au curl classique. Récup 60s.",
+        "video": "curl inversé barre technique"
+      },
+      {
+        "id": "curl_araignee",
+        "name": "Curl Araignée",
+        "equipment": "Haltères / barre EZ + banc incliné",
+        "focus": "Biceps (chef court)",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Spider_Curl/0.jpg",
+        "rest": 60,
+        "points": [
+          "Poitrine contre un banc incliné, bras pendants",
+          "Monte sans balancer",
+          "Contraction 1s en haut, descente lente"
+        ],
+        "tip": "Aucune triche possible grâce au banc. La contraction maximale est en haut. Récup 60s.",
+        "video": "spider curl curl araignée technique"
+      },
+      {
+        "id": "curl_zottman",
+        "name": "Curl Zottman",
+        "equipment": "Haltères",
+        "focus": "Biceps · Avant-bras",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Zottman_Curl/0.jpg",
+        "rest": 60,
+        "points": [
+          "Monte en supination (paumes vers le haut)",
+          "Tourne les poignets en haut (paumes vers le bas)",
+          "Redescends lentement en pronation"
+        ],
+        "tip": "Deux exercices en un : biceps à la montée, avant-bras à la descente. Charge légère. Récup 60s.",
+        "video": "zottman curl technique"
+      },
+      {
+        "id": "curl_marteau_corde",
+        "name": "Curl Marteau Corde",
+        "equipment": "Poulie basse + corde",
+        "focus": "Brachial · Biceps · Avant-bras",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Hammer_Curls_-_Rope_Attachment/0.jpg",
+        "rest": 60,
+        "points": [
+          "Prise neutre sur la corde, coudes collés",
+          "Monte jusqu'aux épaules",
+          "Écarte légèrement la corde en haut"
+        ],
+        "tip": "Tension constante grâce au câble. Garde les coudes immobiles. Récup 60s.",
+        "video": "curl marteau poulie corde technique"
+      },
+      {
+        "id": "curl_machine",
+        "name": "Curl Machine",
+        "equipment": "Machine",
+        "focus": "Biceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Bicep_Curl/0.jpg",
+        "rest": 60,
+        "points": [
+          "Aisselles calées sur le coussin",
+          "Monte sans décoller les coudes",
+          "Descente lente, bras presque tendus"
+        ],
+        "tip": "Guidé : idéal pour finir de brûler les biceps en fin de séance. Récup 60s.",
+        "video": "curl biceps machine technique"
       }
     ]
   },
@@ -6720,7 +7620,8 @@ const EXERCISE_LIBRARY = {
           "Pousser vers le bas en écartant la corde",
           "Contraction en bas"
         ],
-        "tip": "Isolation pure des triceps. Récup 60s."
+        "tip": "Isolation pure des triceps. Récup 60s.",
+        "video": "extension triceps poulie haute corde technique"
       },
       {
         "id": "dips_tricep",
@@ -6734,7 +7635,8 @@ const EXERCISE_LIBRARY = {
           "Descendre jusqu'à 90°",
           "Poussée explosive"
         ],
-        "tip": "Buste droit pour cibler les triceps (vs penché pour les pecs). Récup 60s."
+        "tip": "Buste droit pour cibler les triceps (vs penché pour les pecs). Récup 60s.",
+        "video": "dips sur banc triceps technique"
       },
       {
         "id": "skull_crusher",
@@ -6748,7 +7650,8 @@ const EXERCISE_LIBRARY = {
           "Barre descend vers le front",
           "Coudes fixes"
         ],
-        "tip": "Excellent pour le volume des triceps. Attention à ne pas trop descendre. Récup 75s."
+        "tip": "Excellent pour le volume des triceps. Attention à ne pas trop descendre. Récup 75s.",
+        "video": "barre au front skull crusher technique"
       },
       {
         "id": "ext_tete",
@@ -6762,7 +7665,8 @@ const EXERCISE_LIBRARY = {
           "Coudes pointés vers le haut",
           "Étirement maximal en bas"
         ],
-        "tip": "Seul exercice qui étire complètement le chef long. Récup 60s."
+        "tip": "Bras au-dessus de la tête : la position qui étire le mieux le chef long du triceps. Récup 60s.",
+        "video": "extension triceps haltère au-dessus de la tête technique"
       },
       {
         "id": "kickback",
@@ -6776,7 +7680,8 @@ const EXERCISE_LIBRARY = {
           "Bras parallèle au sol",
           "Extension complète en arrière"
         ],
-        "tip": "Isolation en finition de séance. Charge légère, répétitions lentes. Récup 45s."
+        "tip": "Isolation en finition de séance. Charge légère, répétitions lentes. Récup 45s.",
+        "video": "kickback triceps haltère technique"
       },
       {
         "id": "dev_serre",
@@ -6786,11 +7691,102 @@ const EXERCISE_LIBRARY = {
         "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Close-Grip_Barbell_Bench_Press/0.jpg",
         "rest": 75,
         "points": [
-          "Prise serrée (épaules de largeur)",
+          "Prise serrée (largeur d'épaules)",
           "Coudes contre le corps",
           "Descente contrôlée"
         ],
-        "tip": "Version barre pour charger les triceps. Récup 75s."
+        "tip": "Version barre pour charger les triceps. Récup 75s.",
+        "video": "développé couché prise serrée triceps technique"
+      },
+      {
+        "id": "ext_corde_tete",
+        "name": "Extension Corde au-dessus Tête",
+        "equipment": "Poulie basse + corde",
+        "focus": "Triceps (chef long)",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Overhead_Extension_with_Rope/0.jpg",
+        "rest": 60,
+        "points": [
+          "Dos à la poulie, corde derrière la tête",
+          "Coudes pointés vers l'avant, fixes",
+          "Tends les bras vers l'avant en écartant la corde"
+        ],
+        "tip": "Le chef long du triceps se travaille bras au-dessus de la tête : c'est le plus gros muscle du bras. Récup 60s.",
+        "video": "extension triceps corde au-dessus de la tête poulie technique"
+      },
+      {
+        "id": "poulie_barre_v",
+        "name": "Poulie Barre en V",
+        "equipment": "Poulie haute + barre en V",
+        "focus": "Triceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown_-_V-Bar_Attachment/0.jpg",
+        "rest": 60,
+        "points": [
+          "Coudes collés au corps",
+          "Pousse jusqu'à tendre les bras",
+          "Remonte jusqu'à 90°, jamais plus haut"
+        ],
+        "tip": "Prise plus stable que la corde : tu peux charger un peu plus. Récup 60s.",
+        "video": "extension triceps poulie haute barre V technique"
+      },
+      {
+        "id": "poulie_inversee",
+        "name": "Poulie Prise Inversée",
+        "equipment": "Poulie haute + barre droite",
+        "focus": "Triceps (chef médial)",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Reverse_Grip_Triceps_Pushdown/0.jpg",
+        "rest": 60,
+        "points": [
+          "Paumes vers le haut, coudes collés",
+          "Pousse vers le bas sans plier les poignets",
+          "Retour lent"
+        ],
+        "tip": "Change l'angle de travail et sollicite le triceps autrement. Charge plus légère. Récup 60s.",
+        "video": "extension triceps poulie prise inversée technique"
+      },
+      {
+        "id": "dips_barres_tri",
+        "name": "Dips aux Barres (Triceps)",
+        "equipment": "Barres parallèles",
+        "focus": "Triceps · Pectoraux · Épaules",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Triceps_Version/0.jpg",
+        "rest": 90,
+        "points": [
+          "Buste vertical, coudes serrés le long du corps",
+          "Descends à 90° maximum",
+          "Pousse jusqu'à tendre les bras"
+        ],
+        "tip": "Buste droit = triceps. Si besoin, utilise la machine à dips assistés. Récup 90s.",
+        "video": "dips barres parallèles triceps technique"
+      },
+      {
+        "id": "ext_couchee_halt",
+        "name": "Extension Couchée Haltères",
+        "equipment": "Haltères + banc",
+        "focus": "Triceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Dumbbell_Tricep_Extension/0.jpg",
+        "rest": 60,
+        "points": [
+          "Bras tendus au-dessus de la poitrine",
+          "Plie uniquement les coudes, descends vers les tempes",
+          "Remonte en tendant les bras"
+        ],
+        "tip": "Version haltères du skull crusher : plus doux pour les coudes. Récup 60s.",
+        "video": "extension triceps couché haltères technique"
+      },
+      {
+        "id": "ext_triceps_machine",
+        "name": "Extension Triceps Machine",
+        "equipment": "Machine",
+        "focus": "Triceps",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Machine_Triceps_Extension/0.jpg",
+        "rest": 60,
+        "points": [
+          "Coudes calés sur le coussin",
+          "Pousse jusqu'à l'extension complète",
+          "Retour lent, sans claquer les poids"
+        ],
+        "tip": "Guidé et sûr pour finir de fatiguer les triceps. Récup 60s.",
+        "video": "extension triceps machine technique"
       }
     ]
   },
@@ -6811,7 +7807,8 @@ const EXERCISE_LIBRARY = {
           "Abdos contractés",
           "Respiration normale"
         ],
-        "tip": "Exercice de gainage fondamental. Augmenter la durée progressivement. Récup 30s."
+        "tip": "Exercice de gainage fondamental. Augmenter la durée progressivement. Récup 30s.",
+        "video": "gainage planche technique"
       },
       {
         "id": "planche_lat",
@@ -6825,7 +7822,8 @@ const EXERCISE_LIBRARY = {
           "Hanche levée",
           "Ne pas laisser tomber le bassin"
         ],
-        "tip": "Gainage latéral essentiel pour les changements de direction. Récup 30s."
+        "tip": "Gainage latéral essentiel pour les changements de direction. Récup 30s.",
+        "video": "gainage latéral planche technique"
       },
       {
         "id": "crunch",
@@ -6839,7 +7837,8 @@ const EXERCISE_LIBRARY = {
           "Expirer en montant",
           "Lombaires au sol"
         ],
-        "tip": "Exercice de base des abdos. Contrôler la montée et la descente. Récup 30s."
+        "tip": "Exercice de base des abdos. Contrôler la montée et la descente. Récup 30s.",
+        "video": "crunch abdos technique"
       },
       {
         "id": "russian_twist",
@@ -6853,7 +7852,8 @@ const EXERCISE_LIBRARY = {
           "Rotation du buste (pas des bras)",
           "Ajouter un poids pour progresser"
         ],
-        "tip": "Mouvement de rotation : travaille les obliques et le gainage. Récup 30s."
+        "tip": "Mouvement de rotation : travaille les obliques et le gainage. Récup 30s.",
+        "video": "russian twist technique"
       },
       {
         "id": "leg_raise",
@@ -6867,7 +7867,8 @@ const EXERCISE_LIBRARY = {
           "Montée lente et contrôlée",
           "Descente sans rebond"
         ],
-        "tip": "Excellent pour le bas des abdos. Version suspendue plus intense. Récup 30s."
+        "tip": "Excellent pour le bas des abdos. Version suspendue plus intense. Récup 30s.",
+        "video": "relevé de jambes suspendu abdos technique"
       },
       {
         "id": "dead_bug",
@@ -6881,7 +7882,8 @@ const EXERCISE_LIBRARY = {
           "Bras et jambes opposés en extension",
           "Expirer en descendant"
         ],
-        "tip": "Active les muscles profonds du core. Pattern identique au Bird-Dog debout. Récup 30s."
+        "tip": "Active les muscles profonds du core. Même schéma que le Bird-Dog, mais allongé sur le dos. Récup 30s.",
+        "video": "dead bug exercice gainage technique"
       },
       {
         "id": "bird_dog_core",
@@ -6895,7 +7897,8 @@ const EXERCISE_LIBRARY = {
           "Bras droit + jambe gauche",
           "Maintien 2s, colonne neutre"
         ],
-        "tip": "Coordination bras/jambe opposés. Renforce dos et abdos simultanément. Récup 30s."
+        "tip": "Coordination bras/jambe opposés. Renforce dos et abdos simultanément. Récup 30s.",
+        "video": "bird dog exercice gainage technique"
       },
       {
         "id": "crunch_oblique",
@@ -6909,7 +7912,315 @@ const EXERCISE_LIBRARY = {
           "Expirer en montant",
           "Alterner les côtés"
         ],
-        "tip": "Travaille les obliques et la rotation du tronc : gainage fonctionnel et stabilité du bassin. Récup 30s."
+        "tip": "Travaille les obliques et la rotation du tronc : gainage fonctionnel et stabilité du bassin. Récup 30s.",
+        "video": "crunch oblique technique"
+      },
+      {
+        "id": "roulette",
+        "name": "Roulette Abdominale",
+        "equipment": "Roulette (Ab Wheel)",
+        "focus": "Abdominaux · Gainage profond",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg",
+        "rest": 60,
+        "points": [
+          "Genoux au sol, bras tendus",
+          "Avance sans cambrer, ventre rentré",
+          "Reviens en contractant les abdos"
+        ],
+        "tip": "Très exigeant : commence par une petite amplitude et augmente avec les semaines. Récup 60s.",
+        "video": "roulette abdominale ab wheel technique"
+      },
+      {
+        "id": "mountain_climbers",
+        "name": "Mountain Climbers",
+        "equipment": "Poids de corps",
+        "focus": "Abdominaux · Cardio · Épaules",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Mountain_Climbers/0.jpg",
+        "rest": 45,
+        "points": [
+          "Position de pompe, mains sous les épaules",
+          "Ramène les genoux vers la poitrine en alternant",
+          "Bassin bas, rythme soutenu"
+        ],
+        "tip": "Gainage et cardio en même temps. Fais 30-40 s par série. Récup 45s.",
+        "video": "mountain climbers technique"
+      },
+      {
+        "id": "crunch_poulie",
+        "name": "Crunch Poulie",
+        "equipment": "Poulie haute + corde",
+        "focus": "Abdominaux",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Crunch/0.jpg",
+        "rest": 60,
+        "points": [
+          "À genoux, corde derrière la tête",
+          "Enroule la colonne vers le sol",
+          "Les hanches ne bougent pas"
+        ],
+        "tip": "Permet de charger les abdos comme un autre muscle. Concentre-toi sur l'enroulement. Récup 60s.",
+        "video": "crunch poulie haute à genoux technique"
+      },
+      {
+        "id": "crunch_velo",
+        "name": "Crunch Vélo",
+        "equipment": "Poids de corps",
+        "focus": "Abdominaux · Obliques",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Air_Bike/0.jpg",
+        "rest": 45,
+        "points": [
+          "Dos au sol, mains derrière la tête",
+          "Coude vers le genou opposé en alternant",
+          "Jambe tendue loin du sol, rythme contrôlé"
+        ],
+        "tip": "L'un des meilleurs exercices pour les abdos et les obliques. Ne tire pas sur la nuque. Récup 45s.",
+        "video": "crunch bicyclette abdos technique"
+      },
+      {
+        "id": "jackknife",
+        "name": "Jackknife",
+        "equipment": "Poids de corps",
+        "focus": "Abdominaux (haut et bas)",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Jackknife_Sit-Up/0.jpg",
+        "rest": 45,
+        "points": [
+          "Allongé, bras et jambes tendus",
+          "Monte bras et jambes pour les rapprocher",
+          "Descends lentement sans toucher le sol"
+        ],
+        "tip": "Exercice complet pour les abdos. Fléchis un peu les genoux si c'est trop dur. Récup 45s.",
+        "video": "jackknife abdos technique"
+      },
+      {
+        "id": "bucheron_cable",
+        "name": "Bûcheron Câble",
+        "equipment": "Poulie haute",
+        "focus": "Obliques · Gainage",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Cable_Wood_Chop/0.jpg",
+        "rest": 45,
+        "points": [
+          "Pieds largeur d'épaules, poulie en haut sur le côté",
+          "Tire en diagonale vers la hanche opposée",
+          "Pivote avec le buste, bras tendus"
+        ],
+        "tip": "Rotation puissante, utile pour les frappes de balle. Mouvement fluide, pas d'à-coups. Récup 45s.",
+        "video": "bûcheron poulie wood chop technique"
+      },
+      {
+        "id": "pallof_press",
+        "name": "Pallof Press",
+        "equipment": "Poulie ou élastique",
+        "focus": "Anti-rotation · Obliques · Gainage",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pallof_Press/0.jpg",
+        "rest": 45,
+        "points": [
+          "Debout de profil à la poulie, câble contre la poitrine",
+          "Tends les bras devant toi sans te laisser tourner",
+          "Reviens lentement"
+        ],
+        "tip": "Le corps doit résister à la rotation : excellent pour la stabilité du tronc. Récup 45s.",
+        "video": "pallof press technique"
+      },
+      {
+        "id": "releve_jambes_banc",
+        "name": "Relevé de Jambes sur Banc",
+        "equipment": "Banc",
+        "focus": "Abdominaux bas",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Flat_Bench_Lying_Leg_Raise/0.jpg",
+        "rest": 45,
+        "points": [
+          "Allongé sur le banc, mains tenant le banc derrière la tête",
+          "Monte les jambes tendues à la verticale",
+          "Descends sans toucher le sol, lombaires plaquées"
+        ],
+        "tip": "Variante allongée du relevé de jambes : moins de grip nécessaire que suspendu. Récup 45s.",
+        "video": "relevé de jambes allongé sur banc technique"
+      },
+      {
+        "id": "marche_fermier",
+        "name": "Marche du Fermier",
+        "equipment": "Haltères / kettlebells",
+        "focus": "Gainage · Avant-bras · Trapèzes",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Farmers_Walk/0.jpg",
+        "rest": 60,
+        "points": [
+          "Haltères lourds en mains, épaules basses",
+          "Marche d'un pas régulier, buste droit",
+          "Serre le ventre tout le long"
+        ],
+        "tip": "Très complet : gainage, poigne et trapèzes. Fais 20-30 m par série. Récup 60s.",
+        "video": "farmer walk marche du fermier technique"
+      }
+    ]
+  },
+  "explosif": {
+    "label": "Explosif",
+    "emoji": "⚡",
+    "color": "#76FF03",
+    "exercises": [
+      {
+        "id": "box_jump",
+        "name": "Box Jump",
+        "equipment": "Box / marche stable",
+        "focus": "Explosivité des jambes · Fessiers",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Front_Box_Jump/0.jpg",
+        "rest": 75,
+        "points": [
+          "Départ pieds à largeur d'épaules",
+          "Balance les bras et saute en poussant fort",
+          "Atterris doux, genoux fléchis, puis redescends en marchant"
+        ],
+        "tip": "Développe la détente verticale. Redescends toujours en marchant pour protéger tes tendons. Récup 75s.",
+        "video": "box jump technique"
+      },
+      {
+        "id": "squat_saute",
+        "name": "Squat Sauté",
+        "equipment": "Poids de corps",
+        "focus": "Explosivité · Quadriceps · Fessiers",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Freehand_Jump_Squat/0.jpg",
+        "rest": 60,
+        "points": [
+          "Descends en squat, bras en arrière",
+          "Saute le plus haut possible",
+          "Réception souple, genoux dans l'axe"
+        ],
+        "tip": "Idéal pour la détente. Qualité avant quantité : arrête dès que les réceptions deviennent lourdes. Récup 60s.",
+        "video": "squat sauté jump squat technique"
+      },
+      {
+        "id": "fentes_sautees",
+        "name": "Fentes Sautées",
+        "equipment": "Poids de corps",
+        "focus": "Explosivité · Quadriceps · Fessiers",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Split_Jump/0.jpg",
+        "rest": 60,
+        "points": [
+          "Position de fente, buste droit",
+          "Saute en changeant de jambe en l'air",
+          "Réception amortie, genou avant au-dessus du pied"
+        ],
+        "tip": "Travaille l'équilibre et la puissance unilatérale, comme en course. Récup 60s.",
+        "video": "fentes sautées technique"
+      },
+      {
+        "id": "saut_longueur",
+        "name": "Saut en Longueur",
+        "equipment": "Poids de corps",
+        "focus": "Puissance horizontale · Fessiers · Ischio",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Long_Jump/0.jpg",
+        "rest": 75,
+        "points": [
+          "Pieds à largeur d'épaules, bras en arrière",
+          "Balance les bras et saute loin vers l'avant",
+          "Réception stable, bassin en arrière"
+        ],
+        "tip": "La puissance horizontale sert directement aux premiers appuis en sprint. Récup 75s.",
+        "video": "saut en longueur sans élan pliométrie"
+      },
+      {
+        "id": "bond_lateral",
+        "name": "Bondissements Latéraux",
+        "equipment": "Poids de corps",
+        "focus": "Fessiers · Abducteurs · Appuis",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lateral_Bound/0.jpg",
+        "rest": 60,
+        "points": [
+          "Appui sur une jambe, genou légèrement fléchi",
+          "Saute sur le côté vers l'autre jambe",
+          "Stabilise 1s avant de repartir"
+        ],
+        "tip": "Excellent pour les changements de direction et la stabilité de la cheville. Récup 60s.",
+        "video": "bonds latéraux skater jump technique"
+      },
+      {
+        "id": "swing_kb",
+        "name": "Kettlebell Swing",
+        "equipment": "Kettlebell",
+        "focus": "Chaîne postérieure · Hanches",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Swings/0.jpg",
+        "rest": 60,
+        "points": [
+          "Hanches en arrière, dos plat",
+          "Propulse avec les hanches, pas avec les bras",
+          "Kettlebell jusqu'à hauteur de poitrine"
+        ],
+        "tip": "Le mouvement vient des fessiers. Les bras ne font que guider la kettlebell. Récup 60s.",
+        "video": "kettlebell swing technique"
+      },
+      {
+        "id": "sled_push",
+        "name": "Sled Push",
+        "equipment": "Traîneau (sled)",
+        "focus": "Jambes · Cardio · Puissance",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sled_Push/0.jpg",
+        "rest": 90,
+        "points": [
+          "Mains sur le traîneau, corps penché à 45°",
+          "Pousse en grandes foulées puissantes",
+          "Dos plat, regard vers le sol"
+        ],
+        "tip": "Excellent pour l'accélération et le cardio, sans chocs sur les articulations. Récup 90s.",
+        "video": "sled push traîneau technique"
+      },
+      {
+        "id": "slam_ball",
+        "name": "Slam Ball",
+        "equipment": "Médecine-ball",
+        "focus": "Corps entier · Puissance",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Overhead_Slam/0.jpg",
+        "rest": 60,
+        "points": [
+          "Balle au-dessus de la tête, corps étiré",
+          "Lance fort au sol en gainant le tronc",
+          "Ramasse la balle sans arrondir le dos"
+        ],
+        "tip": "Puissance du tronc et défoulement garanti. Choisis une balle qui ne rebondit pas. Récup 60s.",
+        "video": "slam ball technique"
+      },
+      {
+        "id": "corde_sauter",
+        "name": "Corde à Sauter",
+        "equipment": "Corde",
+        "focus": "Cardio · Mollets · Coordination",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rope_Jumping/0.jpg",
+        "rest": 45,
+        "points": [
+          "Poignets actifs, coudes près du corps",
+          "Sauts courts, sur l'avant-pied",
+          "Respire régulièrement"
+        ],
+        "tip": "Cardio, coordination et mollets en un seul exercice. 30-60 s par série. Récup 45s.",
+        "video": "corde à sauter technique débutant"
+      },
+      {
+        "id": "battle_ropes",
+        "name": "Battle Ropes",
+        "equipment": "Cordes ondulatoires",
+        "focus": "Épaules · Cardio · Gainage",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Battling_Ropes/0.jpg",
+        "rest": 45,
+        "points": [
+          "Position semi-squat, dos plat",
+          "Ondule les cordes en alternance, poignets souples",
+          "Maintiens un rythme rapide 20-30 s"
+        ],
+        "tip": "Cardio intense et haut du corps en même temps. Ne lâche pas le gainage. Récup 45s.",
+        "video": "battle ropes technique"
+      },
+      {
+        "id": "sauts_groupes",
+        "name": "Sauts Groupés",
+        "equipment": "Poids de corps",
+        "focus": "Explosivité · Hanches · Abdos",
+        "img": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Knee_Tuck_Jump/0.jpg",
+        "rest": 60,
+        "points": [
+          "Pieds à largeur d'épaules, bras devant",
+          "Saute en ramenant les genoux vers la poitrine",
+          "Réception souple sur la pointe des pieds"
+        ],
+        "tip": "Exercice de détente avancé. Fais d'abord quelques squats sautés pour t'échauffer. Récup 60s.",
+        "video": "tuck jump sauts genoux poitrine"
       }
     ]
   }
@@ -6950,8 +8261,28 @@ function libThumbError(img) {
   if (fb) fb.style.display = 'flex';
 }
 
+/* Compteurs de l'en-tête et de l'accueil : calculés d'après la bibliothèque (rien d'écrit en dur) */
+function updateLibCounts() {
+  try {
+    var groups = Object.values(EXERCISE_LIBRARY);
+    var total = groups.reduce(function(n, g){ return n + g.exercises.length; }, 0);
+    var kinds = {};
+    var KEYS = [['corps','Poids de corps'],['haltère','Haltères'],['barre','Barres'],['machine','Machines'],['poulie','Poulies'],['câble','Poulies'],['élastique','Élastiques'],['kettlebell','Kettlebell'],['multipower','Multipower'],['banc','Banc'],['corde','Cordes']];
+    groups.forEach(function(g){ g.exercises.forEach(function(e){
+      var q = String(e.equipment || '').toLowerCase();
+      KEYS.forEach(function(k){ if (q.indexOf(k[0]) !== -1) kinds[k[1]] = 1; });
+    }); });
+    function set(id, v){ var el = document.getElementById(id); if (el) el.textContent = v; }
+    set('lib-subtitle', total + ' exercices · ' + groups.length + ' groupes musculaires');
+    set('lib-stat-ex', total); set('lib-stat-gr', groups.length); set('lib-stat-eq', Object.keys(kinds).length);
+    set('home-lib-sub', total + ' exercices \u00b7 ' + groups.length + ' groupes');
+    set('home-lib-badge', total + ' exercices');
+  } catch (e) {}
+}
+
 function renderLibPills() {
   var wrap = document.getElementById('lib-pills');
+  updateLibCounts();
   if (!wrap) return;
   var total = Object.values(EXERCISE_LIBRARY).reduce(function(n, g){ return n + g.exercises.length; }, 0);
   var html = '<button class="lib-pill active" data-group="all" onclick="selectLibGroup(this.dataset.group)">Tous <span class="lib-pill-count">' + total + '</span></button>';
@@ -7083,7 +8414,7 @@ function openLibDetail(groupId, exId) {
     imgWrap.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:16px;text-align:center">Image indisponible</div>';
   });
   var libVid = document.getElementById('lib-detail-video');
-  if (libVid) libVid.innerHTML = exVideoBtnHTML(ex.name);
+  if (libVid) libVid.innerHTML = exVideoBtnHTML(ex.name, '', ex.video);
 
   // Bouton action selon le mode
   var actionsEl = document.getElementById('lib-detail-actions');
@@ -12355,7 +13686,8 @@ function pgStartAdd(g, si) {
   else if (/triceps/.test(T)) first = 'triceps';
   else if (/tirage|trap|lombaire|dos/.test(T)) first = 'dos';
   else if (/gainage/.test(T)) first = 'gainage';
-  else if (/force|puissance|explosiv/.test(T)) first = 'jambes';
+  else if (/explosiv|plyo|détente|saut/.test(T)) first = 'explosif';
+  else if (/force|puissance/.test(T)) first = 'jambes';
   selectLibGroup(first);
 }
 function pgHideBanner() {
